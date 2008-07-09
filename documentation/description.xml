@@ -1,0 +1,40 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+
+<book lang="en">
+ <bookinfo>
+  <date>2008-07-09</date>
+  <title>Kyuuba</title>
+  <authorgroup>
+   <author>
+    <firstname>Magnus</firstname>
+    <surname>Deininger</surname>
+   </author>
+  </authorgroup>
+  <copyright>
+   <year>2008</year>
+   <holder>Magnus Deininger</holder>
+  </copyright>
+
+  <abstract>
+   <para>Kyuuba is an init programme for POSIX-ish systems, that is intended to
+    replace the current de-facto standard SysV-style and BSD-style init
+    programmes.</para>
+   <para>Design goals include complete independence of shell scripts, speed,
+    small memory and on-disk footprints, portability (it should run on at least
+    Linux, *BSD, Darwin and all applicable parts should run on Windows),
+    flexibility and it should aid in virtualisation and service jailing.</para>
+  </abstract>
+ </bookinfo>
+
+ <chapter id="introduction">
+  <title>Introduction</title>
+  <para />
+ </chapter>
+
+ <chapter id="primus-components">
+  <title>Kyuuba Core Components</title>
+  <para />
+ </chapter>
+</book>
