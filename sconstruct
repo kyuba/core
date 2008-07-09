@@ -2,15 +2,15 @@ import os, glob
 
 env = Environment();
 
-db2X = [ 'html', 'txt', 'rtf' ]
+db2Xnc = [ 'html' ]
 
 def buildDocumentation(target, source, env):
-  global db2X
+  global db2Xnc
 
   for i in source:
     for j in target:
-      for t in db2X:
-        os.system ('docbook2' + t + ' ' + str(i) + ' --output documentation/' + t + '-' + str(j) + '  --nochunks')
+      for t in db2Xnc:
+        os.system ('docbook2' + t + ' ' + str(i) + ' --output documentation/' + t + '-' + str(j) + ' --nochunks')
 
   return None
 
