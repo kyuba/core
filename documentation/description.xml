@@ -1,9 +1,9 @@
-<?xml version='1.0'?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
-               "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+                  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 
-<book lang="en">
- <bookinfo>
+<article lang="en" class="whitepaper" xmlns="http://docbook.org/ns/docbook" version="4.5">
+ <articleinfo>
   <date>2008-07-09</date>
   <title>Kyuuba</title>
   <authorgroup>
@@ -26,15 +26,49 @@
     Linux, *BSD, Darwin and all applicable parts should run on Windows),
     flexibility and it should aid in virtualisation and service jailing.</para>
   </abstract>
- </bookinfo>
+</articleinfo>
 
- <chapter id="introduction">
+ <sect1 id="introduction">
   <title>Introduction</title>
   <para />
- </chapter>
+ </sect1>
 
- <chapter id="primus-components">
+ <sect1 id="primus-components">
   <title>Kyuuba Core Components</title>
   <para />
- </chapter>
-</book>
+ </sect1>
+
+ <sect1 id="secundus-service-model">
+  <title>Service Model</title>
+  <para />
+ </sect1>
+
+ <sect1 id="tertius-os-requirements">
+  <title>OS Requirements</title>
+  <para />
+ </sect1>
+
+ <sect1 id="quartus-module-interface">
+  <title>Module Interface</title>
+
+  <para />
+
+  <sect2 id="q-m-i-shared-objects">
+   <title>Shared Objects</title>
+
+   <para />
+  </sect2>
+
+  <sect2 id="q-m-i-static">
+   <title>Statically Linked Modules</title>
+
+   <para />
+  </sect2>
+
+  <sect2 id="q-m-i-hubs">
+   <title>Module Hubs</title>
+
+   <para />
+  </sect2>
+ </sect1>
+</article>
