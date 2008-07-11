@@ -28,47 +28,47 @@
   </abstract>
 </articleinfo>
 
- <sect1 id="introduction">
+ <section id="introduction">
   <title>Introduction</title>
-  <para />
- </sect1>
+  <para/>
+ </section>
 
- <sect1 id="primus-components">
+ <section id="primus-components">
   <title>Kyuuba Core Components</title>
   <para />
- </sect1>
+ </section>
 
- <sect1 id="secundus-service-model">
+ <section id="secundus-service-model">
   <title>Service Model</title>
   <para />
- </sect1>
+ </section>
 
- <sect1 id="tertius-os-requirements">
+ <section id="tertius-os-requirements">
   <title>OS Requirements</title>
   <para />
- </sect1>
+ </section>
 
- <sect1 id="quartus-module-interface">
+ <section id="quartus-module-interface">
   <title>Module Interface</title>
 
   <para />
 
-  <sect2 id="q-m-i-shared-objects">
+  <section id="q-m-i-shared-objects">
    <title>Shared Objects</title>
 
    <para />
-  </sect2>
+  </section>
 
-  <sect2 id="q-m-i-static">
+  <section id="q-m-i-static">
    <title>Statically Linked Modules</title>
 
    <para />
-  </sect2>
+  </section>
 
-  <sect2 id="q-m-i-hubs">
+  <section id="q-m-i-hubs">
    <title>Module Hubs</title>
 
    <para />
-  </sect2>
- </sect1>
+  </section>
+ </section>
 </article>
