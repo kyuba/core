@@ -170,7 +170,19 @@
   <section id="pc-monitor">
    <title>The Monitor</title>
 
-   <para />
+   <para>The monitor is kyuuba's equivalent of the regular /sbin/init programme,
+    the component that is always running as PID=1.</para>
+   <para>The purpose of this programme is to spawn the coordinators, reap dead
+    processes as well as keep track of the service statuses as spawned by the
+    coordinators and keep track of any status information from suspended
+    coordinators and servers.</para>
+   <para>There's going to be slightly different implementations of this
+    programme, depending on the host OS, and othe factors. For example, if the
+    monitor is run off an initramfs as opposed to running directly off a target
+    partition, it will also need to mount the required root filesystems.</para>
+   <para>A minimalistic implementation of this would be running directly off a
+    root filesystem and thus not require any mounting logic or additional
+    configuration.</para>
   </section>
 
   <section id="pc-coordinator">
@@ -188,7 +200,17 @@
   <section id="pc-ipc">
    <title>The IPC System</title>
 
-   <para />
+   <para>All communications between the programmes will be done using
+    S-expressions in regular text form. Spawned processes will be connected to
+    the spawning programme via regular stdio file descriptors. Stdin and stdout
+    file descriptors have an obvious use here; stderr will be connected to the
+    monitor programme for error logging.</para>
+
+   <para>This type of communication makes debugging and coordinator/server
+    testing extremely easy, and S-expressions are extremely easy to parse. There
+    could also be a binary encoding for the S-expressions to increase I/O
+    throughput, although this is unlikely to be required as S-expressions should
+    be sufficiently fast to parse.</para>
   </section>
  </section>
 
