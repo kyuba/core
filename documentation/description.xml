@@ -243,13 +243,41 @@
    <section id="torfl-general-layout">
     <title>General Layout</title>
 
-    <para />
+    <para>Ideally, kyuuba will be used on a system with a proper FHS layout, and
+     kyuuba's monitor will run directly off an initramfs or a small bootstrap
+     partition, where it will be responsible for mounting the root filesystem(s)
+     of an arbitrary number of (compatible) systems to boot.</para>
+   </section>
+
+   <section id="torfl-kyuuba-files">
+    <title>Kyuuba Files</title>
+
+    <para>For FHS-compliant Linux systems, all kyuuba-related files are to be
+     put under /lib/kyu of a given partition. All configuration data is to be
+     stored under /etc/kyu. Binaries under /sbin will probably not be needed,
+     since FHS systems are supposed to be bootstrapped using an initramfs or a
+     similar filesystem that contains kyuuba's monitor, which is well capable of
+     searching for servers and coordinators in /lib/kyu as opposed to /sbin.
+    </para>
+
+    <para>In a pure, kyuuba-only system, /sbin/init may be a non-initramfs
+     kyuuba monitor.</para>
+
+    <para>The monitors should alternatively accept the inverse of this layout,
+     that is /kyu/lib and /kyu/etc, since for certain uses, such as jailing
+     services, this is less intrusive.</para>
+
+    <para>*BSD variants should be able to use the same convention without
+     breaking any traditional FS designs. Windows ports should also be able to
+     follow this layout, although the latter layout could be seen as less
+     intrusive.</para>
+    <para>There have been plans for an alternative FS layout</para>
    </section>
 
    <section id="torfl-libraries">
     <title>Library Locations</title>
 
-    <para />
+    <para></para>
    </section>
   </section>
  </section>
