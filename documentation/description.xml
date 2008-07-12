@@ -125,7 +125,18 @@
      in a lot of confusion with both the users and developers as to what
      behaviour can be expected in some circumstances.</para></listitem>
    </varlistentry>
+   <varlistentry>
+    <term>Portability</term>
+    <listitem><para>Even though the init programme is normally considered to be
+     one of the prime examples of a system-dependant application, we'd like to
+     make sure that this programme will run on all the usual operating systems:
+     *BSD, Linux, Darwin, hopefully also Windows (at least some portions of
+     kyuuba should run perfectly fine on Windows).</para></listitem>
+   </varlistentry>
   </variablelist>
+  <para>Additionally, the programme will be licenced under a BSD-style licence,
+   which means it will be truly free, but also properly usable in a business
+   setting.</para>
  </section>
 
  <section id="primus-components">
@@ -135,16 +146,90 @@
    each other. Splitting kyuuba into multiple programmes will help with
    reclaiming memory used by components that aren't used very often, and it
    increases stability and modularity of the whole system.</para>
+
+  <section id="pc-atomic-libc">
+   <title>C Library</title>
+
+   <para>Even though C is perfectly suited for writing programmes that work fast
+    as well as doing so with tight memory constraints, it's also notorious for
+    needing quite an effort to keep the code portable. For this reason, we'll
+    be writing a special C library that serves as a portability layer, as well
+    as a high level abstraction layer.</para>
+   <para>The library is written in such a way that it is easily made
+    freestanding, that is, so that it won't require the host libc, in order to
+    reduce memory use. It's also designed to only support the functions kyuuba
+    will be needing.</para>
+   <para>Work on this library has already started under codename
+    <quote>Atomic LibC</quote>. The library includes almost all the features
+    we'll be needing, and the freestanding variants turned out to be
+    significantly smaller than most of the host libcs we compared it against.
+    (typically about 16k in statically linked amd64 binaries vs. about
+    300-600k).</para>
+  </section>
+
+  <section id="pc-monitor">
+   <title>The Monitor</title>
+
+   <para />
+  </section>
+
+  <section id="pc-coordinator">
+   <title>The Coordinator(s)</title>
+
+   <para />
+  </section>
+
+  <section id="pc-servers">
+   <title>Servers</title>
+
+   <para />
+  </section>
+
+  <section id="pc-ipc">
+   <title>The IPC System</title>
+
+   <para />
+  </section>
  </section>
 
  <section id="secundus-service-model">
   <title>Service Model</title>
   <para />
+
+  <section id="ssm-dependencies">
+   <title>Dependency Types</title>
+
+   <para />
+  </section>
  </section>
 
  <section id="tertius-os-requirements">
   <title>OS Requirements</title>
   <para />
+
+  <section id="tor-initramfs">
+   <title>Initramfs</title>
+
+   <para />
+  </section>
+
+  <section id="tor-fs-layout">
+   <title>FS Layout</title>
+
+   <para />
+
+   <section id="torfl-general-layout">
+    <title>General Layout</title>
+
+    <para />
+   </section>
+
+   <section id="torfl-libraries">
+    <title>Library Locations</title>
+
+    <para />
+   </section>
+  </section>
  </section>
 
  <section id="quartus-module-interface">
