@@ -2,7 +2,8 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
                   "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 
-<article lang="en" class="whitepaper" xmlns="http://docbook.org/ns/docbook" version="4.5">
+<article lang="en" class="whitepaper" xmlns="http://docbook.org/ns/docbook"
+         version="4.5">
  <articleinfo>
   <date>2008-07-09</date>
   <title>Kyuuba</title>
@@ -30,12 +31,110 @@
 
  <section id="introduction">
   <title>Introduction</title>
-  <para/>
+
+  <para>
+   Kyuuba isn't a completely new programme, actually it's a redesign and rewrite
+   of eINIT. eINIT was, and still is, modular and fast, but we hit a good deal
+   of obstacles that can't be fixed due to the original design, and at the same
+   time due to nobody really enforcing that original design.
+  </para>
+  <para>
+   A lot of the basic goals for kyuba have thus been influenced by eINIT and the
+   experience we've gotten with that. Our goals are:
+  </para>
+  <variablelist>
+   <varlistentry>
+    <term>Speed</term>
+    <listitem><para>Computers should boot fast, and there is absolutely no
+     reason to have them boot slow like they do these days. This is especially
+     important for any embedded application and for things like backup servers
+     that shouldn't be running all the time, but that need to be able to get
+     online as fast as possible. For these applications, slow bootup times
+     are generally annoying and often make the manufacturer of the device look
+     unprofessional.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>Small Size (Memory- and On-Disk)</term>
+    <listitem><para>Init programmes usually need to run at all times, thus they
+     count against the available RAM at all times. For that reason, an init
+     should be as small as possible so that the programmes it initialises have
+     as much ram available to them as possible.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>Parallelisation</term>
+    <listitem><para>A lot of time in the boot process is spent waiting on other
+     processes to do something. Doing nothing while waiting is generally a bad
+     thing to do if we want the whole bootup process to be fast, especially
+     considering that some tasks always take time, such as getting an IP address
+     via DHCP.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>Modularity</term>
+    <listitem><para>Our goal is to get a core application with a 1.0 release out
+     as fast as possible, but we can't possibly foresee all the potential
+     applications of this programme beforehand. For this reason, we need a
+     strong module interface, so that extra functionality can easily added to
+     the core, without modifying the core.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>No Shell Scripting</term>
+    <listitem><para>Shell scripts are slow, but they're handy. For this reason,
+     shell scripting is still extremely popular among Unix veterans. But just
+     because shell scripting is handy, and it's perceived as one way to add
+     flexibility, it isn't the only way to add flexibility. With a properly
+     designed client library, even C should be easy enough to use to cover the
+     typical applications of Shell Scripting in the bootup process.</para>
+    </listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>No 'real' Threading</term>
+    <listitem><para>The first few versions of eINIT relied on heavy threading,
+     but that turned out to create a lot of problems. Eventually the overhead of
+     threading made that approach slower than a custom "green thread"
+     implementation that we tried in a few unreleased versions.</para>
+    <para>Green threads as well as message-passing style threads should suffice
+     for our applications, since there are no calculations that could benefit
+     from multi-processing, and most of time init is only supposed to spawn
+     a number of other processes in the right order.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>Service Supervision</term>
+    <listitem><para>We think that supervising running services is exactly the
+     type of thing that an init programme should be doing. If a service dies for
+     some reason, oftentimes users will want that service to respawn as fast as
+     possible, or they want some other actions to be taken, and since init needs
+     to supervise all processes anyway, this is exactly the type of thing it
+     should be doing at the same time.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>Proper handling of unexpected Situations</term>
+    <listitem><para>If a daemon fails to start, there's often alternative
+     daemons that may take its place; for example if a user is only interested
+     in a graphical login screen and using the computer with a GUI, and after
+     updating his gnome installation for some reason gdm keeps failing, the user
+     will probably prefer a kdm or slim login screen instead of a text mode
+     prompt, which would leave him with a plain shell after entering his login
+     data instead of some GUI the user is actually used to.</para></listitem>
+   </varlistentry>
+   <varlistentry>
+    <term>No need to follow legacy Examples</term>
+    <listitem><para>One of the things that severely hurt eINIT was that we tried
+     to keep all the legacy applications working. While this will still be
+     possible with a properly modular design, we made the mistake of doing this
+     right from the start instead of just adding it afterwards. This resulted
+     in a lot of confusion with both the users and developers as to what
+     behaviour can be expected in some circumstances.</para></listitem>
+   </varlistentry>
+  </variablelist>
  </section>
 
  <section id="primus-components">
   <title>Kyuuba Core Components</title>
-  <para />
+
+  <para>Kyuuba will be split into several components that should interact with
+   each other. Splitting kyuuba into multiple programmes will help with
+   reclaiming memory used by components that aren't used very often, and it
+   increases stability and modularity of the whole system.</para>
  </section>
 
  <section id="secundus-service-model">
@@ -53,19 +152,19 @@
 
   <para />
 
-  <section id="q-m-i-shared-objects">
+  <section id="qmi-shared-objects">
    <title>Shared Objects</title>
 
    <para />
   </section>
 
-  <section id="q-m-i-static">
+  <section id="qmi-static">
    <title>Statically Linked Modules</title>
 
    <para />
   </section>
 
-  <section id="q-m-i-hubs">
+  <section id="qmi-hubs">
    <title>Module Hubs</title>
 
    <para />
