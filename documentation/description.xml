@@ -265,19 +265,18 @@
 
     <para>The monitors should alternatively accept the inverse of this layout,
      that is /kyu/lib and /kyu/etc, since for certain uses, such as jailing
-     services, this is less intrusive.</para>
+     services, this is less intrusive. With this layout, /kyu and /kyu/etc
+     should both work the same.</para>
 
     <para>*BSD variants should be able to use the same convention without
      breaking any traditional FS designs. Windows ports should also be able to
      follow this layout, although the latter layout could be seen as less
      intrusive.</para>
-    <para>There have been plans for an alternative FS layout</para>
-   </section>
 
-   <section id="torfl-libraries">
-    <title>Library Locations</title>
-
-    <para></para>
+    <para>Alternative FS layouts should use analoguous locations. For example
+     for proejct 'Marco Polo', we'd be using the regular /os/arch/lib and
+     /config/kyu directories if it's running off its own dedicated partition, or
+     /os/arch/lib/kyu if it wasn't.</para>
    </section>
   </section>
  </section>
@@ -285,18 +284,41 @@
  <section id="quartus-module-interface">
   <title>Module Interface</title>
 
-  <para />
+  <para>One of the goals is to have a highly modular design so we can get a 1.0
+   release out as fast as possible while still being able to extend the
+   functionality afterwards. For this reason, we need a well designed interface
+   to extend the core functionality.</para>
+
+  <para>For flexibility, we want to implement all of the following three methods
+   to provide a proper environment to work in. Some of the 'loaders' here would
+   be modules themselves, so that for specific uses of kyuuba, useless loaders
+   could easily be omitted.</para>
 
   <section id="qmi-shared-objects">
    <title>Shared Objects</title>
 
-   <para />
+   <para>An obvious way to provide this type of extensibility is to use shared
+    objects, or .dll files in Windows. This type of interface is handy, but it
+    has some disadvantages in terms of memory use, and in general the compiler
+    for both the .so/.dll file and the loading programme can't do all the
+    optimisations it would normally be able to do. This typically results in a
+    larger combined binary size, both on disk and in memory.</para>
+
+   <para>We tackled this issue in eINIT by making meta-modules to load, that is
+    make a collection of shared objects, link them all together as a single
+    shared object which then loads the built-in modules. This approach led to a
+    significant reduction in memory use, while keeping large parts of the
+    flexibilty of the concept.</para>
   </section>
 
   <section id="qmi-static">
    <title>Statically Linked Modules</title>
 
-   <para />
+   <para>Another fairly obvious approach is linking modules directly into the
+    core. This approach allows the C-compiler to do more optimisations than it
+    ordinarily could, resulting in smaller binaries and a lower memory-profile.
+    On the other hand, it requires the modules to be available in either source
+    or object form at compile/link-time....</para>
   </section>
 
   <section id="qmi-hubs">
