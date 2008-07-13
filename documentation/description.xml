@@ -274,7 +274,7 @@
      intrusive.</para>
 
     <para>Alternative FS layouts should use analoguous locations. For example
-     for proejct 'Marco Polo', we'd be using the regular /os/arch/lib and
+     for project 'Marco Polo', we'd be using the regular /os/arch/lib and
      /config/kyu directories if it's running off its own dedicated partition, or
      /os/arch/lib/kyu if it wasn't.</para>
    </section>
