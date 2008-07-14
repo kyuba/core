@@ -2,7 +2,7 @@ import os, glob
 
 env = Environment();
 
-db2Xnc = [ 'html' ]
+db2Xnc = [ 'html', 'rtf' ]
 
 def buildDocumentation(target, source, env):
   global db2Xnc

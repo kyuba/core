@@ -257,25 +257,94 @@
    S-expressions. For performance or compatibility reasons, alternative
    encodings may also be used by writing configuration backend modules.</para>
 
-  <para>This section will only deal with configuration data stored in
-   S-expressions.</para>
-
   <section id="sm-services">
    <title>Service Model</title>
 
-   <para />
+   <para>Instead of the immensely popularised event-based model, we'll stick
+    with a dependency-based model to coordinate launching of services. This is
+    because, while dependencies may seem like heavier-weight than than launching
+    services on events, it's easier to coordinate all of the services so that
+    all the order constraints fit together, while still being able to achieve
+    proper parallelisation for starting services.</para>
 
    <section id="sms-dependencies">
     <title>Dependencies</title>
 
-    <para />
+    <para>The dependencies will be expressed as a big graph; this will be a
+     digraph with four types of nodes and two types of edges. The first node
+     is a special root node that will be used as a starting point whenever
+     services need to start. Apart from that, we'll need two types of nodes for
+     each service, a start node and an end node, and we'll need
+     <quote>action nodes</quote>. These action nodes lie 'between' the start and
+     end nodes, and plain edges connect the start nodes through the action nodes
+     with an end node.</para>
+
+    <para>To enable a service, all we need to do is find a path from the root
+     node to the end node of a service. Once a path is found, it is simply
+     walked and all the actions described in the action nodes along the path are
+     taken. If an action fails, the node is disconnected and a new path is
+     searched; this allows for fallback behaviour, where different
+     implementations of a specific service exist, for example daemons like fcron
+     and vixie-cron, which could both provide a mutual cron service, and if
+     fcron fails to start, its action node is disconnected, and searching a new
+     path would find one that uses an action node that starts vixie-cron.</para>
+
+    <para>Once an end-node for a service is reached, a special shortcut edge is
+     added between the start node and the end node of that service. When
+     subsequently starting other services that depend on that service, the
+     shortcut edge will be used instead of the plain edges so that there's no
+     special handling required to avoid taking actions described in any
+     action nodes.</para>
+
+    <para>To disable a service again, for example when shutting down, all that
+     needs to be done is searching a path from an end node to the root node, and
+     clearing the shortcut edges whenever a start node is passed. Since the
+     graph is directed, this means there's a need for extra action nodes for
+     stopping a service, which conveniently fits the whole model, since
+     different actions need to be taken to disable a service.</para>
+   </section>
+   <section id="sms-advantages">
+    <title>Advantages</title>
+
+    <para>This whole graph model has the advantage of easily being enhanceable
+     with additional node or edge types for more complex layouts. The model here
+     should be able to handle the most common dependency types, such as
+     x-requires-y(,z(,u(,v(...)))) and x-should-be-started-if-y-fails. With
+     minimal adjustments and by introducing simple coordinator nodes and edges,
+     it'll also be able to express dependencies such as
+     x-must-be-started-before-or-after-y and
+     x-should-always-be-started-if-installed or one could add things like
+     join-nodes, where all the currently active graph walking operations that
+     would need to pass through such a node would be required to join up.</para>
+
+    <para>Depending on the 'resolution' of the graph, that is, for example,
+     whether one considers each mountpoint to be a distinct service or only the
+     whole 'mounting' issue, this also allows for an elegant parallelisation of
+     tasks such as mounting filesystems, like in the example, filesystem checks,
+     or bringing up different network interfaces, which oftentimes incur a
+     notable lag due to wlan authentication or dhcp configuration.</para>
+
+    <para>Also, this graph adds additional transparency to users and developers,
+     sich each state of the dependency graph can be visualised with tools like
+     graphviz, to help in tracing seemingly strange waiting behaviour of the
+     overall coordination and parallelisation process.</para>
    </section>
   </section>
 
   <section id="sm-configuration">
    <title>Configuration</title>
 
-   <para />
+   <para>Configuration data, as well as dependency metadata and action
+    descriptions are all to be stored in S-expressions in the applicable
+    configuration directory (either /kyu/etc, /etc/kyu or /kyu). There's not
+    that much configuration data going to be needed for kyuuba itself, most of
+    the data would be for tweaking services and for defining which services to
+    start.</para>
+
+   <para>Dependency metadata needed to construct the dependency graphs will be
+    written in the same way, since S-expressions should be well-suited for this
+    task and being able to use the same parser for both reduces the size of the
+    code.</para>
   </section>
  </section>
 
@@ -318,7 +387,7 @@
    <para>Kyuuba will need to rely on a few characteristics of the used
     filesystems. In general, depending on the use of kyuuba, we could easily
     eliminate the need for certain configuration files in /etc, such as fstab
-    and mtab, however this proved to hard to get accepted by the community in
+    and mtab, however this proved too hard to get accepted by the community in
     eINIT, so this is not going to be a required adjustment for kyuuba to work.
    </para>
 
@@ -429,10 +498,6 @@
     suspend themselves, this allows reclaiming of memory from modules that
     aren't being used very often, by grouping those together and suspending the
     corresponding server.</para>
-
-   <para>Additionally, since we offer the same interface as the more 'direct'
-    counterparts, it'll be trivial to use modules with either this method or the
-    more direct counterpart.</para>
   </section>
  </section>
 
