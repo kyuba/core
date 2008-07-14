@@ -315,11 +315,12 @@
   <section id="tor-fs-layout">
    <title>FS Layout</title>
 
-   <para>Kyuuba will need to rely on a characteristics of the used filesystems.
-    In general, depending on the use of kyuuba, we could easily eliminate the
-    need for certain configuration files in /etc, such as fstab and mtab,
-    however this proved to hard to get accepted by the community in eINIT, so
-    this is not going to be a required adjustment for kyuuba to work.</para>
+   <para>Kyuuba will need to rely on a few characteristics of the used
+    filesystems. In general, depending on the use of kyuuba, we could easily
+    eliminate the need for certain configuration files in /etc, such as fstab
+    and mtab, however this proved to hard to get accepted by the community in
+    eINIT, so this is not going to be a required adjustment for kyuuba to work.
+   </para>
 
    <section id="torfl-general-layout">
     <title>General Layout</title>
