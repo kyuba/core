@@ -1,7 +1,8 @@
 import os, subprocess, glob
 
 # PROGRAMME FILES
-sourcefiles = { 'kyuba-monitor': [ 'kyuba-monitor' ] }
+sourcefiles = { 'kyuba-monitor': [ 'kyuba-monitor' ],
+                'initramfs-init': [ 'initramfs-init' ] }
 
 buildprogrammes = [ 'kyuba-monitor' ]
 
@@ -274,7 +275,8 @@ if not env['skipPkgConfig']:
 
 env.Append (LIBS = ['duat', 'curie'])
 
-# adjust linker/compiler flags in pkgconfig file
+if ostype == 'linux':
+  buildprogrammes += [ 'initramfs-init' ]
 
 p = []
 

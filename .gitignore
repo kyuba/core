@@ -5,3 +5,4 @@ txt-*
 .sconsign.dblite
 kyuba-monitor
 reference
+initramfs-init
