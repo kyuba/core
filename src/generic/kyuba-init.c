@@ -68,7 +68,8 @@ enum signal_callback_result on_sig_int (enum signal signal, void *u)
 
     if (msg == (sexpr)0)
     {
-        msg = cons(make_symbol("ctrl-alt-del"), sx_end_of_list);
+        msg = cons (make_symbol("event"),
+                    cons(make_symbol("ctrl-alt-del"), sx_end_of_list));
     }
 
     if (monitorconnection != (struct sexpr_io *)0)

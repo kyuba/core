@@ -1,6 +1,18 @@
-(keep-alive "/bin/sh" "-c" "sleep 1; echo .")
+(on-power-on
+  (run "/bin/sh" "-c" "sleep 3; echo whatever; sleep 3")
+  (keep-alive "/sbin/agetty" "38400" "tty1" "linux")
+  (keep-alive "/sbin/agetty" "38400" "tty2" "linux")
+  (keep-alive "/sbin/agetty" "38400" "tty3" "linux")
+  (keep-alive "/sbin/agetty" "38400" "tty4" "linux")
+  (keep-alive "/sbin/agetty" "38400" "tty5" "linux")
+  (keep-alive "/sbin/agetty" "38400" "tty6" "linux")
+  (run "/bin/echo" "hello" "world!"))
 
-(run "/bin/sh" "-c" "sleep 3")
-; (run "/sbin/agetty" "38400" "tty1" "linux")
-(run "/bin/echo" "hello" "world!")
-; (exit 2)
+(on-ctrl-alt-del
+  (power-reset))
+
+(on-power-reset
+  (exit))
+
+(on-power-down
+  (exit))
