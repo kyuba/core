@@ -70,7 +70,7 @@ static void on_init_death (struct exec_context *ocontext, void *u)
         case -1:
             cexit(25);
         default:
-            multiplex_process(context, on_init_death, (void *)0);
+            multiplex_add_process(context, on_init_death, (void *)0);
             break;
     }
 }

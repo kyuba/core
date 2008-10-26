@@ -122,7 +122,7 @@ static void sc_run(sexpr context, sexpr environment, sexpr sx)
             case -1:
                 cexit(25);
             default:
-                multiplex_process(context, (void *)0, (void *)0);
+                multiplex_add_process(context, (void *)0, (void *)0);
                 break;
         }
     }
