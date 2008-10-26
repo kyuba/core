@@ -66,6 +66,8 @@ static sexpr lookup_symbol (sexpr context, sexpr key)
     return sx_nonexistent;
 }
 
+static void on_death (struct exec_context *context, void *u) { }
+
 static void sc_run(sexpr context, sexpr environment, sexpr sx)
 {
     sexpr cur = sx;
@@ -122,7 +124,7 @@ static void sc_run(sexpr context, sexpr environment, sexpr sx)
             case -1:
                 cexit(25);
             default:
-                multiplex_add_process(context, (void *)0, (void *)0);
+                multiplex_add_process(context, on_death, (void *)0);
                 break;
         }
     }
