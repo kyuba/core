@@ -1,0 +1,2 @@
+; (run "/sbin/agetty" "38400" "tty1" "linux")
+(run "/bin/echo" "hello" "world!")

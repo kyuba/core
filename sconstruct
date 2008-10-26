@@ -1,10 +1,11 @@
 import os, subprocess, glob
 
 # PROGRAMME FILES
-sourcefiles = { 'kyuba-monitor': [ 'kyuba-monitor' ],
-                'initramfs-init': [ 'initramfs-init' ] }
+sourcefiles = { 'monitor': [ 'kyuba-monitor', 'script' ],
+                'init': [ 'kyuba-init', 'script' ],
+                'initramfs-init': [ 'initramfs-init', 'script' ] }
 
-buildprogrammes = [ 'kyuba-monitor' ]
+buildprogrammes = [ 'monitor', 'init' ]
 
 installheaders = [ ]
 
@@ -109,10 +110,10 @@ if scanexec (env['compilerPrefix'] + '-ranlib'):
 
 # install directories
 
-sbindir         = env['destdir'] + env['prefix'] + 'sbin/'
 bindir          = env['destdir'] + env['prefix'] + 'bin/'
-etcdir          = env['destdir'] + env['prefix'] + 'etc/kyuba/'
-libdir          = env['destdir'] + env['prefix'] + env['libdir'] + '/'
+etcdir          = env['destdir'] + env['prefix'] + 'etc/kyu/'
+libdir          = env['destdir'] + env['prefix'] + env['libdir'] + '/kyu/'
+sbindir         = libdir + 'bin/'
 includedir      = env['destdir'] + env['prefix'] + 'include/kyuba/'
 # os.environ['PKG_CONFIG_PATH']
 ##############
@@ -295,6 +296,8 @@ for j in buildprogrammes:
 
 env.Alias ('programme', p)
 
+env.Install (etcdir, 'data/init.sx')
+
 for i in glob.glob('tests/*.c'):
   env.Program(i)
 
@@ -303,4 +306,4 @@ for i in installheaders:
   if x:
     env.Install (includedir, x);
 
-env.Alias('install', [ sbindir ])
+env.Alias('install', [ sbindir, etcdir ])

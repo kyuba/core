@@ -1,8 +1,8 @@
 /*
- *  kyuba-monitor.c
+ *  kyuba-init.c
  *  kyuba
  *
- *  Created by Magnus Deininger on 23/10/2008.
+ *  Created by Magnus Deininger on 26/10/2008.
  *  Copyright 2008 Magnus Deininger. All rights reserved.
  *
  */
@@ -37,14 +37,9 @@
  */
 
 #include <curie/main.h>
-#include <curie/sexpr.h>
-#include <curie/multiplex.h>
 #include <curie/memory.h>
-#include <curie/filesystem.h>
-
-#include <kyuba/script.h>
-
-struct sexpr_io *stdio;
+#include <curie/exec.h>
+#include <curie/multiplex.h>
 
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
 {
@@ -58,71 +53,42 @@ static void *gm_recover(unsigned long int s)
     return (void *)0;
 }
 
-static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
-{
-    sexpr context = (sexpr)p;
+static char **commandline;
 
-    script_run (context, sx);
+static void on_init_death (struct exec_context *ocontext, void *u)
+{
+    struct exec_context *context;
+
+    context = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
+            EXEC_CALL_CREATE_SESSION,
+            commandline,
+            curie_environment);
+
+    switch (context->pid)
+    {
+        case 0:
+        case -1:
+            cexit(25);
+        default:
+            multiplex_process(context, on_init_death, (void *)0);
+            break;
+    }
 }
 
 int cmain ()
 {
-    sexpr context = sx_end_of_list;
-    sexpr environment = sx_end_of_list;
-    sexpr environment_raw = sx_end_of_list;
-    int i = 0;
+    char *cmd[] = { "/lib/kyu/bin/monitor", "/etc/kyu/init.sx", (void *)0 };
+
+    commandline = cmd;
 
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
-    stdio = sx_open_stdio();
-
     multiplex_all_processes();
-    multiplex_sexpr();
 
-    while (curie_environment[i] != (char *)0)
-    {
-        int y = 0;
-        while ((curie_environment[i][y] != (char)0) &&
-               (curie_environment[i][y] != (char)'=')) y++;
-
-        if (curie_environment[i][y] != (char)0)
-        {
-            curie_environment[i][y] = 0;
-            environment
-                    = cons(cons(make_symbol(curie_environment[i]),
-                                make_string((curie_environment[i]) + y + 1)), 
-                            environment);
-            curie_environment[i][y] = '=';
-
-            environment_raw
-                    = cons(make_string(curie_environment[i]),
-                           environment_raw);
-        }
-
-        i++;
-    }
-
-    context
-        = cons (cons (make_symbol ("environment"), environment),
-                cons(cons (make_symbol ("environment-raw"), environment_raw),
-                     context));
-
-    i = 1;
-    while (curie_argv[i] != (char *)0)
-    {
-        if (filep(curie_argv[i]))
-        {
-            multiplex_add_sexpr(sx_open_io (io_open_read (curie_argv[i]),
-                                            io_open (-1)),
-                                on_script_read,
-                                (void *)context);
-        }
-
-        i++;
-    }
+    on_init_death((void *)0, (void *)0);
 
     while (multiplex() == mx_ok);
 
-    return 21;
+    return 0;
 }
