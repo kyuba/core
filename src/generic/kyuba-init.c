@@ -55,9 +55,11 @@ static void *gm_recover(unsigned long int s)
 
 static char **commandline;
 
-static void on_init_death (struct exec_context *ocontext, void *u)
+static void on_init_death (struct exec_context *ctx, void *u)
 {
     struct exec_context *context;
+
+    free_exec_context (ctx);
 
     context = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
             EXEC_CALL_CREATE_SESSION,

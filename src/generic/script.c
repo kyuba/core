@@ -39,10 +39,25 @@
 #include <curie/main.h>
 #include <curie/sexpr.h>
 #include <curie/multiplex.h>
+#include <curie/memory.h>
 
 #include <kyuba/script.h>
 
 struct sexpr_io *stdio;
+
+struct sqelement {
+    sexpr sx;
+    sexpr context;
+
+    struct sqelement *next;
+};
+
+static char deferred = 0;
+static sexpr sym_environment = (sexpr)0;
+
+static struct sqelement *script_queue = (struct sqelement *)0;
+
+static void sc_keep_alive(sexpr, sexpr, sexpr);
 
 static sexpr lookup_symbol (sexpr context, sexpr key)
 {
@@ -66,9 +81,29 @@ static sexpr lookup_symbol (sexpr context, sexpr key)
     return sx_nonexistent;
 }
 
-static void on_death (struct exec_context *context, void *u) { }
+static void on_death (struct exec_context *ctx, void *u)
+{
+    free_exec_context (ctx);
 
-static void sc_run(sexpr context, sexpr environment, sexpr sx)
+    deferred = 0;
+    script_dequeue();
+}
+
+static void on_death_respawn (struct exec_context *ctx, void *u)
+{
+    sexpr rs = (sexpr)u;
+    sexpr context = car(rs);
+
+    free_exec_context (ctx);
+
+    sc_keep_alive (context,
+                   lookup_symbol(context, sym_environment),
+                   cdr(rs));
+
+    sx_destroy (rs);
+}
+
+static struct exec_context *sc_run_x(sexpr context, sexpr environment, sexpr sx)
 {
     sexpr cur = sx;
     unsigned int length = 0;
@@ -114,29 +149,52 @@ static void sc_run(sexpr context, sexpr environment, sexpr sx)
         env[i] = (char *)0;
 
         proccontext = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
-                              EXEC_CALL_CREATE_SESSION,
-                              x,
-                              env);
+                EXEC_CALL_CREATE_SESSION,
+                x,
+                env);
 
         if (proccontext->pid > 0)
         {
-            multiplex_add_process(proccontext, on_death, (void *)0);
+            return proccontext;
         }
         else
         {
             cexit(25);
         }
     }
+
+    return (struct exec_context *)0;
 }
 
-void script_run(sexpr context, sexpr sx)
+static void sc_run(sexpr context, sexpr environment, sexpr sx)
+{
+    struct exec_context *c = sc_run_x (context, environment, sx);
+
+    deferred = 1;
+    multiplex_add_process(c, on_death, (void *)0);
+}
+
+static void sc_keep_alive(sexpr context, sexpr environment, sexpr sx)
+{
+    struct exec_context *c = sc_run_x (context, environment, sx);
+
+    sx_xref (context);
+    sx_xref (sx);
+
+    multiplex_add_process(c, on_death_respawn, (void *)cons(context, sx));
+}
+
+static void script_run(sexpr context, sexpr sx)
 {
     static sexpr sym_run         = (sexpr)0;
-    static sexpr sym_environment = (sexpr)0;
+    static sexpr sym_keep_alive  = (sexpr)0;
+    static sexpr sym_exit        = (sexpr)0;
 
     if (sym_run == (sexpr)0)
     {
         sym_run         = make_symbol ("run");
+        sym_keep_alive  = make_symbol ("keep-alive");
+        sym_exit        = make_symbol ("exit");
         sym_environment = make_symbol ("environment-raw");
     }
 
@@ -148,6 +206,70 @@ void script_run(sexpr context, sexpr sx)
         if (truep(equalp(scar, sym_run)))
         {
             sc_run (context, lookup_symbol(context, sym_environment), scdr);
+        } else if (truep(equalp(scar, sym_keep_alive)))
+        {
+            sc_keep_alive (context,
+                           lookup_symbol(context, sym_environment),
+                           scdr);
+        } else if (truep(equalp(scar, sym_exit)))
+        {
+            cexit (sx_integer(scdr));
+        }
+    }
+}
+
+void script_dequeue()
+{
+    if (deferred == 1) return;
+
+    while ((script_queue != (struct sqelement *)0) &&
+           (deferred == 0))
+    {
+        struct sqelement *e = script_queue;
+
+        script_run (e->context, e->sx);
+
+        sx_destroy (e->context);
+        sx_destroy (e->sx);
+
+        script_queue = script_queue->next;
+        free_pool_mem (e);
+    }
+}
+
+void script_enqueue(sexpr context, sexpr sx)
+{
+    static struct memory_pool pool
+            = MEMORY_POOL_INITIALISER(sizeof(struct sqelement));
+
+    if (deferred == 0)
+    {
+        script_run (context, sx);
+    }
+    else
+    {
+        struct sqelement *e = (struct sqelement *)get_pool_mem (&pool);
+
+        sx_xref(context);
+        sx_xref(sx);
+
+        e->sx = sx;
+        e->context = context;
+        e->next = (struct sqelement *)0;
+
+        if (script_queue == (struct sqelement *)0)
+        {
+            script_queue = e;
+        }
+        else
+        {
+            struct sqelement *cur = script_queue;
+            while (cur->next != (struct sqelement *)0)
+            {
+                cur = cur->next;
+            }
+
+            cur->next = e;
         }
     }
 }

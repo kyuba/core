@@ -62,7 +62,9 @@ static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
 {
     sexpr context = (sexpr)p;
 
-    script_run (context, sx);
+    script_enqueue (context, sx);
+
+    sx_destroy (sx);
 }
 
 int cmain ()
@@ -77,7 +79,7 @@ int cmain ()
 
     stdio = sx_open_stdio();
 
-    multiplex_process();
+    multiplex_all_processes();
     multiplex_sexpr();
 
     while (curie_environment[i] != (char *)0)
@@ -91,7 +93,7 @@ int cmain ()
             curie_environment[i][y] = 0;
             environment
                     = cons(cons(make_symbol(curie_environment[i]),
-                                make_string((curie_environment[i]) + y + 1)), 
+                                make_string((curie_environment[i]) + y + 1)),
                             environment);
             curie_environment[i][y] = '=';
 

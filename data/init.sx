@@ -1,2 +1,6 @@
+(keep-alive "/bin/sh" "-c" "sleep 1; echo .")
+
+(run "/bin/sh" "-c" "sleep 3")
 ; (run "/sbin/agetty" "38400" "tty1" "linux")
 (run "/bin/echo" "hello" "world!")
+; (exit 2)

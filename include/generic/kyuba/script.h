@@ -45,7 +45,8 @@ extern "C" {
 
 #include <curie/sexpr.h>
 
-void script_run(sexpr context, sexpr sx);
+void script_enqueue(sexpr context, sexpr sx);
+void script_dequeue();
 
 #ifdef __cplusplus
 }
