@@ -75,8 +75,6 @@ static void on_stdio_read(sexpr sx, struct sexpr_io *io, void *p)
 int cmain ()
 {
     sexpr context = sx_end_of_list;
-    sexpr environment = sx_end_of_list;
-    sexpr environment_raw = sx_end_of_list;
     int i = 0;
 
     set_resize_mem_recovery_function(rm_recover);
@@ -86,34 +84,6 @@ int cmain ()
     multiplex_sexpr();
 
     stdio = sx_open_stdio();
-
-    while (curie_environment[i] != (char *)0)
-    {
-        int y = 0;
-        while ((curie_environment[i][y] != (char)0) &&
-               (curie_environment[i][y] != (char)'=')) y++;
-
-        if (curie_environment[i][y] != (char)0)
-        {
-            curie_environment[i][y] = 0;
-            environment
-                    = cons(cons(make_symbol(curie_environment[i]),
-                                make_string((curie_environment[i]) + y + 1)),
-                            environment);
-            curie_environment[i][y] = '=';
-
-            environment_raw
-                    = cons(make_string(curie_environment[i]),
-                           environment_raw);
-        }
-
-        i++;
-    }
-
-    context
-        = cons (cons (make_symbol ("environment"), environment),
-                cons(cons (make_symbol ("environment-raw"), environment_raw),
-                     context));
 
     i = 1;
     while (curie_argv[i] != (char *)0)

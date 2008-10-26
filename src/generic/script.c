@@ -53,12 +53,12 @@ struct sqelement {
 };
 
 static char deferred = 0;
-static sexpr sym_environment = (sexpr)0;
 
 static struct sqelement *script_queue = (struct sqelement *)0;
 
-static void sc_keep_alive(sexpr, sexpr, sexpr);
+static void sc_keep_alive(sexpr, sexpr);
 
+#if 0
 static sexpr lookup_symbol (sexpr context, sexpr key)
 {
     sexpr cur = context;
@@ -80,6 +80,7 @@ static sexpr lookup_symbol (sexpr context, sexpr key)
 
     return sx_nonexistent;
 }
+#endif
 
 static void on_death (struct exec_context *ctx, void *u)
 {
@@ -97,13 +98,12 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
     free_exec_context (ctx);
 
     sc_keep_alive (context,
-                   lookup_symbol(context, sym_environment),
                    cdr(rs));
 
     sx_destroy (rs);
 }
 
-static struct exec_context *sc_run_x(sexpr context, sexpr environment, sexpr sx)
+static struct exec_context *sc_run_x(sexpr context, sexpr sx)
 {
     sexpr cur = sx;
     unsigned int length = 0;
@@ -129,29 +129,10 @@ static struct exec_context *sc_run_x(sexpr context, sexpr environment, sexpr sx)
         }
         x[i] = (char *)0;
 
-        cur = environment;
-        length = 0;
-        while (consp(cur))
-        {
-            length++;
-            cur = cdr(cur);
-        }
-
-        char *env[(length + 1)];
-        cur = environment;
-        i = 0;
-        while (consp(cur))
-        {
-            env[i] = (char *)sx_string(car(cur));
-            i++;
-            cur = cdr(cur);
-        }
-        env[i] = (char *)0;
-
         proccontext = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
                 EXEC_CALL_CREATE_SESSION,
                 x,
-                env);
+                curie_environment);
 
         if (proccontext->pid > 0)
         {
@@ -166,17 +147,17 @@ static struct exec_context *sc_run_x(sexpr context, sexpr environment, sexpr sx)
     return (struct exec_context *)0;
 }
 
-static void sc_run(sexpr context, sexpr environment, sexpr sx)
+static void sc_run(sexpr context, sexpr sx)
 {
-    struct exec_context *c = sc_run_x (context, environment, sx);
+    struct exec_context *c = sc_run_x (context, sx);
 
     deferred = 1;
     multiplex_add_process(c, on_death, (void *)0);
 }
 
-static void sc_keep_alive(sexpr context, sexpr environment, sexpr sx)
+static void sc_keep_alive(sexpr context, sexpr sx)
 {
-    struct exec_context *c = sc_run_x (context, environment, sx);
+    struct exec_context *c = sc_run_x (context, sx);
 
     sx_xref (context);
     sx_xref (sx);
@@ -195,7 +176,6 @@ static void script_run(sexpr context, sexpr sx)
         sym_run         = make_symbol ("run");
         sym_keep_alive  = make_symbol ("keep-alive");
         sym_exit        = make_symbol ("exit");
-        sym_environment = make_symbol ("environment-raw");
     }
 
     if (consp(sx))
@@ -205,11 +185,10 @@ static void script_run(sexpr context, sexpr sx)
 
         if (truep(equalp(scar, sym_run)))
         {
-            sc_run (context, lookup_symbol(context, sym_environment), scdr);
+            sc_run (context, scdr);
         } else if (truep(equalp(scar, sym_keep_alive)))
         {
             sc_keep_alive (context,
-                           lookup_symbol(context, sym_environment),
                            scdr);
         } else if (truep(equalp(scar, sym_exit)))
         {
