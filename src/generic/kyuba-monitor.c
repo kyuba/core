@@ -67,6 +67,11 @@ static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
     sx_destroy (sx);
 }
 
+static void on_stdio_read(sexpr sx, struct sexpr_io *io, void *p)
+{
+    on_script_read(sx, io, p);
+}
+
 int cmain ()
 {
     sexpr context = sx_end_of_list;
@@ -77,10 +82,10 @@ int cmain ()
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
-    stdio = sx_open_stdio();
-
     multiplex_all_processes();
     multiplex_sexpr();
+
+    stdio = sx_open_stdio();
 
     while (curie_environment[i] != (char *)0)
     {
@@ -123,6 +128,8 @@ int cmain ()
 
         i++;
     }
+
+    multiplex_add_sexpr(stdio, on_stdio_read, (void *)context);
 
     while (multiplex() == mx_ok);
 

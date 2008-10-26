@@ -40,6 +40,7 @@
 #include <curie/memory.h>
 #include <curie/exec.h>
 #include <curie/multiplex.h>
+#include <curie/signal.h>
 
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
 {
@@ -54,15 +55,40 @@ static void *gm_recover(unsigned long int s)
 }
 
 static char **commandline;
+struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
+
+static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
+{
+    sx_destroy (sx);
+}
+
+enum signal_callback_result on_sig_int (enum signal signal, void *u)
+{
+    static sexpr msg = (sexpr)0;
+
+    if (msg == (sexpr)0)
+    {
+        msg = cons(make_symbol("ctrl-alt-del"), sx_end_of_list);
+    }
+
+    if (monitorconnection != (struct sexpr_io *)0)
+    {
+        sx_write (monitorconnection, msg);
+    }
+
+    return scr_keep;
+}
 
 static void on_init_death (struct exec_context *ctx, void *u)
 {
     struct exec_context *context;
 
-    free_exec_context (ctx);
+    if (ctx != (struct exec_context *)0)
+    {
+        free_exec_context (ctx);
+    }
 
-    context = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
-            EXEC_CALL_CREATE_SESSION,
+    context = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
             commandline,
             curie_environment);
 
@@ -72,6 +98,9 @@ static void on_init_death (struct exec_context *ctx, void *u)
         case -1:
             cexit(25);
         default:
+            monitorconnection = sx_open_io (context->in, context->out);
+
+            multiplex_add_sexpr (monitorconnection, on_conn_read, (void *)0);
             multiplex_add_process(context, on_init_death, (void *)0);
             break;
     }
@@ -87,9 +116,13 @@ int cmain ()
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
+    multiplex_signal();
     multiplex_all_processes();
+    multiplex_sexpr();
 
     on_init_death((void *)0, (void *)0);
+
+    multiplex_add_signal(sig_int, on_sig_int, (void *)0);
 
     while (multiplex() == mx_ok);
 
