@@ -77,7 +77,8 @@ static void on_init_death (struct exec_context *ocontext, void *u)
 
 int cmain ()
 {
-    char *cmd[] = { "/lib/kyu/bin/monitor", "/etc/kyu/init.sx", (void *)0 };
+    static char *cmd[]
+            = { "/lib/kyu/bin/monitor", "/etc/kyu/init.sx", (void *)0 };
 
     commandline = cmd;
 

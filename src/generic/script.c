@@ -83,7 +83,7 @@ static void sc_run(sexpr context, sexpr environment, sexpr sx)
     {
         char *x[(length + 1)];
         unsigned int i = 0;
-        struct exec_context *context;
+        struct exec_context *proccontext;
 
         cur = sx;
         while (consp(cur))
@@ -113,19 +113,18 @@ static void sc_run(sexpr context, sexpr environment, sexpr sx)
         }
         env[i] = (char *)0;
 
-        context = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
-                          EXEC_CALL_CREATE_SESSION,
-                          x,
-                          env);
+        proccontext = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
+                              EXEC_CALL_CREATE_SESSION,
+                              x,
+                              env);
 
-        switch (context->pid)
+        if (proccontext->pid > 0)
         {
-            case 0:
-            case -1:
-                cexit(25);
-            default:
-                multiplex_add_process(context, on_death, (void *)0);
-                break;
+            multiplex_add_process(proccontext, on_death, (void *)0);
+        }
+        else
+        {
+            cexit(25);
         }
     }
 }

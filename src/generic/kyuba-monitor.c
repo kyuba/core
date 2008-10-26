@@ -77,7 +77,7 @@ int cmain ()
 
     stdio = sx_open_stdio();
 
-    multiplex_all_processes();
+    multiplex_process();
     multiplex_sexpr();
 
     while (curie_environment[i] != (char *)0)
