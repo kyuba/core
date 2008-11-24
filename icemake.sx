@@ -1,7 +1,7 @@
 (programme "monitor" libcurie
   (name "monitor")
   (description "Kyuba generic monitor programme")
-  (version 1)
+  (version "1")
 
   (code "kyuba-monitor" "script")
 
@@ -10,13 +10,13 @@
 (programme "init" libcurie
   (name "init")
   (description "Kyuba minimal init programme")
-  (version 1)
+  (version "1")
 
   (code "kyuba-init" "script"))
 
 (programme "initramfs-init" libcurie
   (name "initramfs-init")
   (description "Kyuba initramfs init programme")
-  (version 1)
+  (version "1")
 
   (code "initramfs-init" "script"))
