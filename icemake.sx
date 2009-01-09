@@ -1,9 +1,22 @@
+(library "kyuba" libcurie
+  (name "Kyuba Shared Code")
+  (description "This library containts kyuba-specific code shared by the components")
+  (version "1")
+  (url "http://kyuba.org/")
+
+  (code "script")
+
+  (headers
+        "script"))
+
 (programme "monitor" libcurie
   (name "monitor")
   (description "Kyuba generic monitor programme")
   (version "1")
 
-  (code "kyuba-monitor" "script")
+  (libraries "kyuba")
+
+  (code "kyuba-monitor")
 
   (data "kyu" "init.sx"))
 
@@ -12,11 +25,24 @@
   (description "Kyuba minimal init programme")
   (version "1")
 
-  (code "kyuba-init" "script"))
+  (libraries "kyuba")
+
+  (code "kyuba-init"))
 
 (programme "initramfs-init" libcurie
   (name "initramfs-init")
   (description "Kyuba initramfs init programme")
   (version "1")
 
-  (code "initramfs-init" "script"))
+  (libraries "kyuba")
+
+  (code "initramfs-init"))
+
+(programme "ipc-hub" libcurie
+  (name "ipc-hub")
+  (description "Kyuba IPC Hub")
+  (version "1")
+
+  (libraries "duat" "kyuba")
+
+  (code "ipc-hub"))

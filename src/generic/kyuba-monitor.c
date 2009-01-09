@@ -170,13 +170,17 @@ static void run_scripts()
 
     while (curie_argv[i] != (char *)0)
     {
-        if (filep(curie_argv[i]))
+        sexpr n = make_string (curie_argv[i]);
+
+        if (filep(n))
         {
             multiplex_add_sexpr(sx_open_io (io_open_read (curie_argv[i]),
                                 io_open (-1)),
                                           on_script_read,
                                           (void *)context);
         }
+
+        sx_destroy (n);
 
         i++;
     }
