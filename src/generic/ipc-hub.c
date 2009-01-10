@@ -61,11 +61,13 @@ static void *gm_recover(unsigned long int s)
 
 static void mx_sx_stdio_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
+    sx_destroy (sx);
 }
 
 static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
     sx_write (stdio, sx);
+    sx_destroy (sx);
 }
 
 static void on_event_read
