@@ -1,40 +1,30 @@
 /*
- *  ipc-hub.c
- *  kyuba
- *
- *  Created by Magnus Deininger on 09/01/2009.
- *  Copyright 2009 Magnus Deininger. All rights reserved.
- *
- */
+ * This file is part of the kyuba.org Kyuba project.
+ * See the appropriate repository at http://git.kyuba.org/ for exact file
+ * modification records.
+*/
 
 /*
- * Copyright (c) 2009, Magnus Deininger All rights reserved.
+ * Copyright (c) 2008, 2009, Kyuba Project Members
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer. *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution. *
- * Neither the name of the project nor the names of its contributors may
- * be used to endorse or promote products derived from this software
- * without specific prior written permission.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS 
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
- */
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+*/
 
 #include <curie/main.h>
 #include <curie/sexpr.h>
@@ -77,7 +67,7 @@ static void on_event_read
     d9r_reply_read (io, tag, 6, (int_8*)"(nop)\n");
 }
 
-int_32 on_event_write
+static int_32 on_event_write
         (struct dfs_file *f, int_64 offset, int_32 length, int_8 *data)
 {
     io_write (queue_io, (char *)data, length);
@@ -92,7 +82,6 @@ int cmain()
 
     struct dfs *fs = dfs_create();
     struct dfs_directory *d_kyu  = dfs_mk_directory (fs->root, "kyu");
-    struct io *queue_in;
 
     dfs_mk_file (d_kyu, "raw", (char *)0, (int_8 *)0, 0, (void *)0,
                  on_event_read, on_event_write);
@@ -100,9 +89,7 @@ int cmain()
     queue_io = io_open_special();
     stdio = sx_open_stdio();
 
-    net_open_loop (&queue_in, &queue_io);
-/*    queue = sx_open_io (queue_io, queue_io);*/
-    queue = sx_open_io (queue_in, queue_io);
+    queue = sx_open_io (queue_io, queue_io);
 
     multiplex_sexpr();
     multiplex_network();
