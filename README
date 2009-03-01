@@ -1,0 +1,41 @@
+###- QUICK AND DIRTY: COMPILATION AND INSTALLATION -############################
+  You'll need curie-7, including icemake, and duat-5...
+
+    $ icemake -dif /usr
+
+
+################################################################################
+
+
+NOTE:
+  This is an early version of this programme and it doesn't have nearly as many
+  of the features we're having in mind for the final version. Right now it's
+  just a sysvinit clone using 9p and a configuration file in s-expressions.
+  In essence, you'll still need some sort of "rc system", which distributions
+  tend to ship with. If you're doing an LFS or similar, right now I'd recommend
+  using OpenRC ( http://roy.marples.name/projects/openrc ) with kyuba.
+
+NOTE.2:
+  Please take note of the library licence (the COPYING file), as well as the
+  credits (the CREDITS file).
+
+
+###- DETAILS -##################################################################
+
+Compilation:
+  Make sure you have libcurie-7 and libduat-5 installed, then:
+
+    $ icemake
+
+  A number of compilation options are available if you run into issues. To see
+  them, use:
+
+    $ icemake --help
+
+Installation:
+  use this command to install regularly (for example into /usr, in the example):
+
+    $ icemake -dif /some/prefix
+
+CONTACT:
+  Best bet is IRC: freenode #kyuba
