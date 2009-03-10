@@ -46,3 +46,12 @@
   (libraries "duat" "kyuba")
 
   (code "ipc-hub"))
+
+(programme "kyu" libcurie
+  (name "ipc-client")
+  (description "Kyuba IPC Client")
+  (version "1")
+
+  (libraries "duat")
+
+  (code "ipc-client"))
