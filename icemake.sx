@@ -4,10 +4,10 @@
   (version "1")
   (url "http://kyuba.org/")
 
-  (code "script")
+  (code "script" "ipc")
 
   (headers
-        "script"))
+        "script" "ipc"))
 
 (programme "monitor" libcurie
   (name "monitor")
@@ -52,6 +52,6 @@
   (description "Kyuba IPC Client")
   (version "1")
 
-  (libraries "duat")
+  (libraries "duat" "kyuba")
 
   (code "ipc-client"))

@@ -33,9 +33,21 @@
 #include <curie/network.h>
 #include <duat/9p-server.h>
 
-static struct sexpr_io *stdio;
-static struct sexpr_io *queue;
-static struct io *queue_io;
+struct open_read_data
+{
+    struct d9r_io         *io;
+    struct io             *iox;
+    int_16                 tag;
+    struct open_read_data *next;
+};
+
+static struct sexpr_io       *stdio;
+static struct sexpr_io       *queue;
+static struct sexpr_io       *sx_io_buf;
+static struct io             *queue_io;
+static struct io             *io_buf;
+
+static struct open_read_data *od        = (struct open_read_data *)0;
 
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
 {
@@ -51,20 +63,106 @@ static void *gm_recover(unsigned long int s)
 
 static void mx_sx_stdio_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
+    sx_write (sx_io_buf, sx);
     sx_destroy (sx);
 }
 
 static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
+    sx_write (sx_io_buf, sx);
     sx_write (stdio, sx);
     sx_destroy (sx);
+}
+
+static void enqueue_read_request (struct d9r_io *io, int_16 tag)
+{
+    struct memory_pool p
+            = MEMORY_POOL_INITIALISER (sizeof (struct open_read_data));
+    struct open_read_data *c = od;
+
+    while (c != (struct open_read_data *)0)
+    {
+        if (c->tag == NO_TAG_9P)
+        {
+            if (c->io == (struct d9r_io *)0)
+            {
+                c->tag           = tag;
+                c->io            = io;
+                c->iox->length   = 0;
+                c->iox->position = 0;
+                return;
+            }
+            else if (c->io == io)
+            {
+                c->tag           = tag;
+                return;
+            }
+        }
+
+        c                        = c->next;
+    }
+
+    c                            = get_pool_mem (&p);
+
+    c->io                        = io;
+    c->iox                       = io_open_special ();
+    c->tag                       = tag;
+    c->next                      = od;
+    od                           = c;
+}
+
+static void handle_read_requests ()
+{
+    struct open_read_data *c = od;
+
+    while (c != (struct open_read_data *)0)
+    {
+        if ((c->io  != (struct d9r_io *)0) &&
+            (c->tag != NO_TAG_9P))
+        {
+            struct io *io = c->iox;
+            unsigned int l = io->length - io->position;
+
+            if (l > 0)
+            {
+                if (l > 0x1000) l = 0x1000;
+                d9r_reply_read (c->io, c->tag, l,
+                                (int_8 *)io->buffer + io->position);
+
+                io->position += l;
+                c->tag = NO_TAG_9P;
+            }
+        }
+
+        c = c->next;
+    }
+}
+
+static void io_buf_read (struct io *io, void *aux)
+{
+    struct open_read_data *c      = od;
+    char                  *bstart = io->buffer + io->position;
+    unsigned int           len    = io->length - io->position;
+
+    while (c != (struct open_read_data *)0)
+    {
+        if (c->io != (struct d9r_io *)0)
+        {
+            io_write (c->iox, bstart, len);
+        }
+        c = c->next;
+    }
+
+    io->position = io->length;
+
+    handle_read_requests ();
 }
 
 static void on_event_read
         (struct d9r_io *io, int_16 tag,
          struct dfs_file *f, int_64 offset, int_32 length)
 {
-    d9r_reply_read (io, tag, 6, (int_8*)"(nop)\n");
+    enqueue_read_request (io, tag);
 }
 
 static int_32 on_event_write
@@ -83,11 +181,14 @@ int cmain()
     struct dfs *fs = dfs_create();
     struct dfs_directory *d_kyu  = dfs_mk_directory (fs->root, "kyu");
 
+    io_buf         = io_open_special();
+    sx_io_buf      = sx_open_io (io_open (-1), io_buf);
+
     dfs_mk_file (d_kyu, "raw", (char *)0, (int_8 *)0, 0, (void *)0,
                  on_event_read, on_event_write);
 
-    queue_io = io_open_special();
-    stdio = sx_open_stdio();
+    queue_io       = io_open_special();
+    stdio          = sx_open_stdio();
 
     queue = sx_open_io (queue_io, queue_io);
 
@@ -95,8 +196,9 @@ int cmain()
     multiplex_network();
     multiplex_d9s();
 
-    multiplex_add_sexpr (stdio, mx_sx_stdio_read, (void *)0);
-    multiplex_add_sexpr (queue, mx_sx_queue_read, (void *)0);
+    multiplex_add_sexpr (stdio,  mx_sx_stdio_read, (void *)0);
+    multiplex_add_sexpr (queue,  mx_sx_queue_read, (void *)0);
+    multiplex_add_io    (io_buf, io_buf_read, (void *)0, (void *)0);
 
     multiplex_add_d9s_socket ("/dev/kyu-ipc-9p", fs);
 
