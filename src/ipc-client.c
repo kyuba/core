@@ -55,6 +55,11 @@ static void on_read_stdio (sexpr e, struct sexpr_io *io, void *aux)
 static void on_event (sexpr event, void *aux)
 {
     sx_write (stdio, event);
+
+    if (consp (event) && truep(equalp(car(event), sym_disconnect)))
+    {
+        cexit (24);
+    }
 }
 
 int cmain()

@@ -57,6 +57,7 @@ void kyu_disconnect ()
     if (d9io != (struct d9r_io *)0)
     {
         multiplex_del_d9r (d9io);
+        d9io = (struct d9r_io *)0;
     }
 }
 
@@ -100,6 +101,21 @@ static void on_error (struct d9r_io *io, const char *error, void *aux)
     k->on_event (cons (sym_error, make_string (error)), k->aux);
 }
 
+static void on_close (struct d9r_io *io, void *aux)
+{
+    struct kaux *k = (struct kaux *)aux;
+
+    k->on_event (cons (sym_disconnect, sx_end_of_list), k->aux);
+
+    d9io = (struct d9r_io *)0;
+
+    if (kio != (struct sexpr_io *)0)
+    {
+        sx_close_io (kio);
+        kio = (struct sexpr_io *)0;
+    }
+}
+
 void multiplex_add_kyu_socket
         (const char *socket, void (*on_event)(sexpr, void *), void *aux)
 {
@@ -109,7 +125,8 @@ void multiplex_add_kyu_socket
     a->on_event = on_event;
     a->aux      = aux;
 
-    multiplex_add_d9c_socket (socket, on_connect, on_error, (void *)a);
+    multiplex_add_d9c_socket (socket, on_connect, on_error, on_close,
+                              (void *)a);
 }
 
 void kyu_command (sexpr s)
