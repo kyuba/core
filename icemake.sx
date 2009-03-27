@@ -4,10 +4,10 @@
   (version "1")
   (url "http://kyuba.org/")
 
-  (code "script" "ipc")
+  (code "script" "ipc" "ipc-9p")
 
   (headers
-        "script" "ipc"))
+        "script" "ipc" "ipc-9p"))
 
 (programme "monitor" libcurie
   (name "monitor")

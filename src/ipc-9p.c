@@ -28,7 +28,7 @@
 
 #include <curie/memory.h>
 #include <curie/multiplex.h>
-#include <kyuba/ipc.h>
+#include <kyuba/ipc-9p.h>
 
 struct kaux
 {
@@ -36,50 +36,67 @@ struct kaux
     void  *aux;
 };
 
-static struct sexpr_io *kio = (struct sexpr_io *)0;
-static sexpr cbuf           = sx_end_of_list;
+static struct d9r_io *d9io  = (struct d9r_io *)0;
 
-void multiplex_kyu ()
+void multiplex_kyu_d9c ()
 {
     static char installed = (char)0;
 
     if (installed == (char)0) {
-        multiplex_io    ();
-        multiplex_sexpr ();
+        multiplex_kyu   ();
+        multiplex_d9c   ();
         installed = (char)1;
     }
 }
 
-void kyu_disconnect ()
+void kyu_disconnect_d9c ()
 {
-    if (kio != (struct sexpr_io *)0)
+    if (d9io != (struct d9r_io *)0)
     {
-        sx_close_io (kio);
-        kio = (struct sexpr_io *)0;
+        multiplex_del_d9r (d9io);
+        d9io = (struct d9r_io *)0;
     }
+
+    kyu_disconnect ();
 }
 
-void kyu_command (sexpr s)
-{
-    if (kio != (struct sexpr_io *)0)
-    {
-        sx_write (kio, s);
-    }
-    else
-    {
-        cbuf = cons (s, cbuf);
-    }
-}
-
-static void on_event_read (sexpr e, struct sexpr_io *io, void *aux)
+static void on_event (sexpr e, void *aux)
 {
     struct kaux *k = (struct kaux *)aux;
 
     k->on_event (e, k->aux);
 }
 
-void multiplex_add_kyu_sexpr
-        (struct sexpr_io *io, void (*on_event)(sexpr, void *), void *aux)
+static void on_connect (struct d9r_io *io, void *aux)
+{
+    struct io *i = io_open_read_9p (io, "kyu/raw");
+    struct io *o = io_open_write_9p (io, "kyu/raw");
+
+    d9io = io;
+
+    multiplex_add_kyu_sexpr  (sx_open_io (i, o), on_event, aux);
+}
+
+static void on_error (struct d9r_io *io, const char *error, void *aux)
+{
+    struct kaux *k = (struct kaux *)aux;
+
+    k->on_event (cons (sym_error, make_string (error)), k->aux);
+}
+
+static void on_close (struct d9r_io *io, void *aux)
+{
+    struct kaux *k = (struct kaux *)aux;
+
+    k->on_event (cons (sym_disconnect, sx_end_of_list), k->aux);
+
+    d9io = (struct d9r_io *)0;
+
+    kyu_disconnect ();
+}
+
+void multiplex_add_kyu_d9c_socket
+        (const char *socket, void (*on_event)(sexpr, void *), void *aux)
 {
     struct memory_pool p = MEMORY_POOL_INITIALISER (sizeof (struct kaux));
     struct kaux *a = get_pool_mem (&p);
@@ -87,22 +104,6 @@ void multiplex_add_kyu_sexpr
     a->on_event = on_event;
     a->aux      = aux;
 
-    kio = io;
-
-    multiplex_add_sexpr (kio, on_event_read, a);
-
-    if (consp(cbuf))
-    {
-        sexpr c = cbuf;
-
-        do
-        {
-            sx_write (kio, car(c));
-            c = cdr (c);
-        }
-        while (consp (c));
-
-        sx_destroy (cbuf);
-        cbuf = sx_end_of_list;
-    }
+    multiplex_add_d9c_socket (socket, on_connect, on_error, on_close,
+                              (void *)a);
 }

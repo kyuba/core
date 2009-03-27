@@ -36,25 +36,19 @@ extern "C" {
 #include <curie/sexpr.h>
 #include <duat/9p-client.h>
 
-#define KYU_9P_IPC_SOCKET "/dev/kyu-ipc-9p"
-
 define_symbol (sym_shut_down,  "shut-down");
 define_symbol (sym_reboot,     "reboot");
 define_symbol (sym_error,      "error");
 define_symbol (sym_disconnect, "disconnect");
 
-void multiplex_kyu            ();
+void multiplex_kyu                ();
 
-void multiplex_add_kyu_d9c    (struct d9r_io *io,
-                               void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_sexpr  (struct sexpr_io *,
-                               void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_socket (const char *socket,
-                               void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio  (void (*on_event)(sexpr, void *), void *aux);
+void multiplex_add_kyu_sexpr      (struct sexpr_io *,
+                                   void (*on_event)(sexpr, void *), void *aux);
+void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
 
-void kyu_command              (sexpr command);
-void kyu_disconnect           ();
+void kyu_command                  (sexpr command);
+void kyu_disconnect               ();
 
 #ifdef __cplusplus
 }

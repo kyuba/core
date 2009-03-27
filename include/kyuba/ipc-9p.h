@@ -26,58 +26,28 @@
  * THE SOFTWARE.
 */
 
-#include <curie/main.h>
-#include <curie/memory.h>
-#include <curie/sexpr.h>
-#include <curie/multiplex.h>
-#include <duat/9p-client.h>
-#include <kyuba/ipc-9p.h>
+#ifndef KYUBA_IPC_9P_H
+#define KYUBA_IPC_9P_H
 
-static struct sexpr_io *stdio = (struct sexpr_io *)0;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
-{
-    cexit(22);
-    return (void *)0;
+#include <kyuba/ipc.h>
+
+#define KYU_9P_IPC_SOCKET "/dev/kyu-ipc-9p"
+
+void multiplex_kyu_d9c            ();
+
+void multiplex_add_kyu_d9c        (struct d9r_io *io,
+                                   void (*on_event)(sexpr, void *), void *aux);
+void multiplex_add_kyu_d9c_socket (const char *socket,
+                                   void (*on_event)(sexpr, void *), void *aux);
+
+void kyu_disconnect_d9c           ();
+
+#ifdef __cplusplus
 }
+#endif
 
-static void *gm_recover(unsigned long int s)
-{
-    cexit(23);
-    return (void *)0;
-}
-
-static void on_read_stdio (sexpr e, struct sexpr_io *io, void *aux)
-{
-    kyu_command (e);
-}
-
-static void on_event (sexpr event, void *aux)
-{
-    sx_write (stdio, event);
-
-    if (consp (event) && truep(equalp(car(event), sym_disconnect)))
-    {
-        cexit (24);
-    }
-}
-
-int cmain()
-{
-    set_resize_mem_recovery_function(rm_recover);
-    set_get_mem_recovery_function(gm_recover);
-
-    stdio = sx_open_stdio ();
-
-    multiplex_kyu_d9c ();
-
-    multiplex_add_kyu_d9c_socket
-            (KYU_9P_IPC_SOCKET, on_event, (void *)0);
-    multiplex_add_sexpr (stdio, on_read_stdio, (void *)0);
-
-/*    kyu_command (cons (sym_shut_down, sx_end_of_list));*/
-
-    while (multiplex() == mx_ok);
-
-    return 0;
-}
+#endif

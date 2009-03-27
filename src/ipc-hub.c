@@ -32,6 +32,7 @@
 #include <curie/multiplex.h>
 #include <curie/network.h>
 #include <duat/9p-server.h>
+#include <kyuba/ipc-9p.h>
 
 struct open_read_data
 {
@@ -218,7 +219,7 @@ int cmain()
     multiplex_add_sexpr (queue,  mx_sx_queue_read, (void *)0);
     multiplex_add_io    (io_buf, io_buf_read, (void *)0, (void *)0);
 
-    multiplex_add_d9s_socket ("/dev/kyu-ipc-9p", fs);
+    multiplex_add_d9s_socket (KYU_9P_IPC_SOCKET, fs);
 
     while (multiplex() == mx_ok);
 
