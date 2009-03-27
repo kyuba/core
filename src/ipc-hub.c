@@ -173,12 +173,30 @@ static int_32 on_event_write
     return length;
 }
 
+static void on_client_disconnect (struct d9r_io *io, void *aux)
+{
+    struct open_read_data *c = od;
+
+    while (c != (struct open_read_data *)0)
+    {
+        if (c->io == io)
+        {
+            c->io            = (struct d9r_io *)0;
+            c->tag           = NO_TAG_9P;
+            c->iox->length   = 0;
+            c->iox->position = 0;
+        }
+
+        c = c->next;
+    }
+}
+
 int cmain()
 {
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
-    struct dfs *fs = dfs_create();
+    struct dfs *fs = dfs_create(on_client_disconnect, (void *)0);
     struct dfs_directory *d_kyu  = dfs_mk_directory (fs->root, "kyu");
 
     io_buf         = io_open_special();
