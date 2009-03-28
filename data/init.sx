@@ -1,24 +1,24 @@
 (on-power-on
-;  (run "/sbin/rc" "sysinit")
-;
-;  (run "/sbin/rc" "boot")
-;
-;  (run "/sbin/rc" "default")
-;
-  (keep-alive "/sbin/agetty" "38400" "tty1" "linux")
-  (keep-alive "/sbin/agetty" "38400" "tty2" "linux")
-  (keep-alive "/sbin/agetty" "38400" "tty3" "linux")
-  (keep-alive "/sbin/agetty" "38400" "tty4" "linux")
-  (keep-alive "/sbin/agetty" "38400" "tty5" "linux")
-  (keep-alive "/sbin/agetty" "38400" "tty6" "linux")
+  (run "rc" "sysinit")
 
-  (keep-alive "/lib/kyu/bin/ipc-hub"))
+  (run "rc" "boot")
+
+  (run "rc" "default")
+
+  (keep-alive "agetty" "38400" "tty1" "linux")
+  (keep-alive "agetty" "38400" "tty2" "linux")
+  (keep-alive "agetty" "38400" "tty3" "linux")
+  (keep-alive "agetty" "38400" "tty4" "linux")
+  (keep-alive "agetty" "38400" "tty5" "linux")
+  (keep-alive "agetty" "38400" "tty6" "linux")
+
+  (keep-alive "ipc-hub"))
 
 (on-ctrl-alt-del
   (power-reset))
 
 (on-power-reset
-  (run "/sbin/rc" "reboot"))
+  (run "rc" "reboot"))
 
 (on-power-down
-  (run "/sbin/rc" "shutdown"))
+  (run "rc" "shutdown"))

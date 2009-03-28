@@ -36,10 +36,10 @@ extern "C" {
 #include <curie/sexpr.h>
 #include <duat/9p-client.h>
 
-define_symbol (sym_shut_down,  "shut-down");
-define_symbol (sym_reboot,     "reboot");
-define_symbol (sym_error,      "error");
-define_symbol (sym_disconnect, "disconnect");
+define_symbol (sym_power_down,  "power-down");
+define_symbol (sym_power_reset, "power-reset");
+define_symbol (sym_error,       "error");
+define_symbol (sym_disconnect,  "disconnect");
 
 void multiplex_kyu                ();
 

@@ -31,6 +31,7 @@
 #include <curie/exec.h>
 #include <curie/multiplex.h>
 #include <curie/signal.h>
+#include <curie/shell.h>
 
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
 {
@@ -44,7 +45,7 @@ static void *gm_recover(unsigned long int s)
     return (void *)0;
 }
 
-static char **commandline;
+static const char **commandline;
 struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
 
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
@@ -80,8 +81,8 @@ static void on_init_death (struct exec_context *ctx, void *u)
     }
 
     context = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
-            commandline,
-            curie_environment);
+                      (char **)commandline,
+                      curie_environment);
 
     switch (context->pid)
     {
@@ -99,9 +100,13 @@ static void on_init_death (struct exec_context *ctx, void *u)
 
 int cmain ()
 {
-    static char *cmd[]
-            = { "/lib/kyu/bin/monitor", "/etc/kyu/init.sx", (void *)0 };
+    static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
+    define_string (str_monitor, "monitor");
+    sexpr mbinary = which (str_monitor);
 
+    if (falsep(mbinary)) return 1;
+
+    cmd[0] = sx_string (mbinary);
     commandline = cmd;
 
     set_resize_mem_recovery_function(rm_recover);

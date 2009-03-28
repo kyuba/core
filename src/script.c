@@ -31,6 +31,7 @@
 #include <curie/multiplex.h>
 #include <curie/memory.h>
 
+#include <curie/shell.h>
 #include <kyuba/script.h>
 
 struct sexpr_io *stdio;
@@ -113,16 +114,24 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         cur = sx;
         while (consp(cur))
         {
-            x[i] = (char *)sx_string(car(cur));
+            if ((i == 0) && (x[0][0] != '/'))
+            {
+                x[0] = (char *)sx_string(which (car(cur)));
+            }
+            else
+            {
+                x[i] = (char *)sx_string(car(cur));
+            }
             i++;
             cur = cdr(cur);
         }
         x[i] = (char *)0;
 
-        proccontext = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
-                EXEC_CALL_CREATE_SESSION,
-                x,
-                curie_environment);
+        proccontext
+                = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
+                          EXEC_CALL_CREATE_SESSION,
+                          x,
+                          curie_environment);
 
         if (proccontext->pid > 0)
         {
