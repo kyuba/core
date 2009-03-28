@@ -114,13 +114,15 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         cur = sx;
         while (consp(cur))
         {
-            if ((i == 0) && (x[0][0] != '/'))
+            sexpr c = car(cur);
+            const char *s = sx_string(c);
+            if ((i == 0) && (s[0] != '/'))
             {
-                x[0] = (char *)sx_string(which (car(cur)));
+                x[0] = (char *)sx_string(which (c));
             }
             else
             {
-                x[i] = (char *)sx_string(car(cur));
+                x[i] = (char *)s;
             }
             i++;
             cur = cdr(cur);
