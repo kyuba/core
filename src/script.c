@@ -118,7 +118,12 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
             const char *s = sx_string(c);
             if ((i == 0) && (s[0] != '/'))
             {
-                x[0] = (char *)sx_string(which (c));
+                c = which (c);
+                if (falsep (c))
+                {
+                    return (struct exec_context *)0;
+                }
+                x[0] = (char *)sx_string(c);
             }
             else
             {
@@ -152,18 +157,24 @@ static void sc_run(sexpr context, sexpr sx)
 {
     struct exec_context *c = sc_run_x (context, sx);
 
-    deferred = 1;
-    multiplex_add_process(c, on_death, (void *)0);
+    if (c != (struct exec_context *)0)
+    {
+        deferred = 1;
+        multiplex_add_process(c, on_death, (void *)0);
+    }
 }
 
 static void sc_keep_alive(sexpr context, sexpr sx)
 {
     struct exec_context *c = sc_run_x (context, sx);
 
-    sx_xref (context);
-    sx_xref (sx);
+    if (c != (struct exec_context *)0)
+    {
+        sx_xref (context);
+        sx_xref (sx);
 
-    multiplex_add_process(c, on_death_respawn, (void *)cons(context, sx));
+        multiplex_add_process(c, on_death_respawn, (void *)cons(context, sx));
+    }
 }
 
 static void script_run(sexpr context, sexpr sx)
