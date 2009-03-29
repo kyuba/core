@@ -2,8 +2,4 @@
 html-*
 rtf-*
 txt-*
-.sconsign.dblite
-monitor
-reference
-initramfs-init
 build
