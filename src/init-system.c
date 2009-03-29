@@ -26,31 +26,8 @@
  * THE SOFTWARE.
 */
 
-#ifndef KYUBA_IPC_H
-#define KYUBA_IPC_H
+#include <curie/main.h>
+#include <init/system.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <curie/sexpr.h>
-#include <duat/9p-client.h>
-#include <kyuba/script.h>
-
-define_symbol (sym_error,       "error");
-define_symbol (sym_disconnect,  "disconnect");
-
-void multiplex_kyu                ();
-
-void multiplex_add_kyu_sexpr      (struct sexpr_io *,
-                                   void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
-
-void kyu_command                  (sexpr command);
-void kyu_disconnect               ();
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+void enable_ctrl_alt_del () {} /* this is a stub on most systems */
+void disable_ctrl_alt_del () {} /* this is a stub on most systems */

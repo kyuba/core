@@ -88,8 +88,7 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
 
     free_exec_context (ctx);
 
-    sc_keep_alive (context,
-                   cdr(rs));
+    sc_keep_alive (context, cdr(rs));
 
     sx_destroy (rs);
 }
@@ -179,17 +178,6 @@ static void sc_keep_alive(sexpr context, sexpr sx)
 
 static void script_run(sexpr context, sexpr sx)
 {
-    static sexpr sym_run         = (sexpr)0;
-    static sexpr sym_keep_alive  = (sexpr)0;
-    static sexpr sym_exit        = (sexpr)0;
-
-    if (sym_run == (sexpr)0)
-    {
-        sym_run         = make_symbol ("run");
-        sym_keep_alive  = make_symbol ("keep-alive");
-        sym_exit        = make_symbol ("exit");
-    }
-
     if (consp(sx))
     {
         sexpr scar = car(sx);
@@ -200,8 +188,7 @@ static void script_run(sexpr context, sexpr sx)
             sc_run (context, scdr);
         } else if (truep(equalp(scar, sym_keep_alive)))
         {
-            sc_keep_alive (context,
-                           scdr);
+            sc_keep_alive (context, scdr);
         } else if (truep(equalp(scar, sym_exit)))
         {
             cexit (sx_integer(scdr));

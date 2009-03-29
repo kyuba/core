@@ -18,7 +18,9 @@
   (power-reset))
 
 (on-power-reset
-  (run "rc" "reboot"))
+  (run "rc" "reboot")
+  (run "power" "reset"))
 
 (on-power-down
-  (run "rc" "shutdown"))
+  (run "rc" "shutdown")
+  (run "power" "down"))

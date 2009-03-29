@@ -90,13 +90,18 @@ static void on_event (sexpr event, void *aux)
         {
             cexit (24);
         }
-        else if (truep(equalp(c, sym_power_down)))
+        else if (truep(equalp(c, sym_event)))
         {
-            cexit (0);
-        }
-        else if (truep(equalp(c, sym_power_reset)))
-        {
-            cexit (0);
+            c = car (cdr (event));
+
+            if (truep(equalp(c, sym_power_down)))
+            {
+                cexit (0);
+            }
+            else if (truep(equalp(c, sym_power_reset)))
+            {
+                cexit (0);
+            }
         }
     }
 }
@@ -124,11 +129,11 @@ int cmain()
                 {
                     case 'H':
                     case 'D':
-                        kyu_command (cons (sym_power_down, sx_end_of_list));
+                        kyu_command (cons (sym_event, cons (sym_power_down, sx_end_of_list)));
                         cmd = (char)1;
                         break;
                     case 'R':
-                        kyu_command (cons (sym_power_reset, sx_end_of_list));
+                        kyu_command (cons (sym_event, cons (sym_power_reset, sx_end_of_list)));
                         cmd = (char)1;
                         break;
                     case 'i':

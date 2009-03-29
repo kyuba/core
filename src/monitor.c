@@ -39,7 +39,7 @@ struct sexpr_io *stdio;
 static enum gstate {
     gs_power_on,
     gs_power_reset,
-    gs_power_off,
+    gs_power_down,
     gs_ctrl_alt_del
 } init_state = gs_power_on;
 
@@ -59,15 +59,6 @@ static void *gm_recover(unsigned long int s)
 
 static void do_dispatch_script (sexpr sx, sexpr context)
 {
-    static sexpr sym_power_reset     = (sexpr)0;
-    static sexpr sym_power_off       = (sexpr)0;
-
-    if (sym_power_reset == (sexpr)0)
-    {
-        sym_power_reset     = make_symbol ("power-reset");
-        sym_power_off       = make_symbol ("power-off");
-    }
-
     sexpr cur = sx;
 
     while (consp(cur))
@@ -80,9 +71,9 @@ static void do_dispatch_script (sexpr sx, sexpr context)
             init_state = gs_power_reset;
             run_scripts();
         }
-        else if (truep(equalp(tcar, sym_power_off)))
+        else if (truep(equalp(tcar, sym_power_down)))
         {
-            init_state = gs_power_off;
+            init_state = gs_power_down;
             run_scripts();
         }
         else
@@ -96,39 +87,25 @@ static void do_dispatch_script (sexpr sx, sexpr context)
 
 static void do_dispatch_event (sexpr sx, sexpr context)
 {
-    static sexpr sym_ctrl_alt_del    = (sexpr)0;
-
-    if (sym_ctrl_alt_del == (sexpr)0)
-    {
-        sym_ctrl_alt_del    = make_symbol ("ctrl-alt-del");
-    }
-
     if (truep(equalp(car(sx), sym_ctrl_alt_del)))
     {
         init_state = gs_ctrl_alt_del;
+        run_scripts();
+    }
+    else if (truep(equalp(car(sx), sym_power_down)))
+    {
+        init_state = gs_power_down;
+        run_scripts();
+    }
+    else if (truep(equalp(car(sx), sym_power_reset)))
+    {
+        init_state = gs_power_reset;
         run_scripts();
     }
 }
 
 static void dispatch_script (sexpr sx, sexpr context)
 {
-    static sexpr sym_on_ctrl_alt_del = (sexpr)0;
-    static sexpr sym_on_power_on     = (sexpr)0;
-    static sexpr sym_on_power_reset  = (sexpr)0;
-    static sexpr sym_on_power_off    = (sexpr)0;
-    static sexpr sym_always          = (sexpr)0;
-    static sexpr sym_event           = (sexpr)0;
-
-    if (sym_on_ctrl_alt_del == (sexpr)0)
-    {
-        sym_on_ctrl_alt_del = make_symbol ("on-ctrl-alt-del");
-        sym_on_power_on     = make_symbol ("on-power-on");
-        sym_on_power_reset  = make_symbol ("on-power-reset");
-        sym_on_power_off    = make_symbol ("on-power-off");
-        sym_always          = make_symbol ("always");
-        sym_event           = make_symbol ("event");
-    }
-
     if (consp (sx))
     {
         sexpr ccar = car(sx);
@@ -138,7 +115,7 @@ static void dispatch_script (sexpr sx, sexpr context)
             do_dispatch_event (cdr(sx), context);
         } else if (truep(equalp(ccar, sym_always)) ||
             ((init_state == gs_power_on) && truep(equalp(ccar, sym_on_power_on))) ||
-            ((init_state == gs_power_off) && truep(equalp(ccar, sym_on_power_off))) ||
+            ((init_state == gs_power_down) && truep(equalp(ccar, sym_on_power_down))) ||
             ((init_state == gs_power_reset) && truep(equalp(ccar, sym_on_power_reset))) ||
             ((init_state == gs_ctrl_alt_del) && truep(equalp(ccar, sym_on_ctrl_alt_del))))
         {
@@ -156,23 +133,20 @@ static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
 static void run_scripts()
 {
     sexpr context = sx_end_of_list;
-    int i = 1;
 
-    while (curie_argv[i] != (char *)0)
+    for (int i = 1; curie_argv[i] != (char *)0; i++)
     {
         sexpr n = make_string (curie_argv[i]);
 
         if (filep(n))
         {
-            multiplex_add_sexpr(sx_open_io (io_open_read (curie_argv[i]),
-                                io_open (-1)),
-                                          on_script_read,
-                                          (void *)context);
+            multiplex_add_sexpr
+                    (sx_open_io (io_open_read (curie_argv[i]),
+                                 io_open (-1)),
+                     on_script_read, (void *)context);
         }
 
         sx_destroy (n);
-
-        i++;
     }
 }
 

@@ -33,6 +33,8 @@
 #include <curie/signal.h>
 #include <curie/shell.h>
 
+#include <kyuba/script.h>
+
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
 {
     cexit(22);
@@ -59,8 +61,7 @@ enum signal_callback_result on_sig_int (enum signal signal, void *u)
 
     if (msg == (sexpr)0)
     {
-        msg = cons (make_symbol("event"),
-                    cons(make_symbol("ctrl-alt-del"), sx_end_of_list));
+        msg = cons (sym_event, cons(sym_ctrl_alt_del, sx_end_of_list));
     }
 
     if (monitorconnection != (struct sexpr_io *)0)

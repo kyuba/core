@@ -16,7 +16,7 @@
 
   (libraries "kyuba")
 
-  (code "kyuba-monitor")
+  (code "monitor")
 
   (data "kyu" "init.sx"))
 
@@ -25,9 +25,9 @@
   (description "Kyuba minimal init programme")
   (version "1")
 
-  (libraries "kyuba")
+  (libraries "kyuba" "syscall")
 
-  (code "kyuba-init"))
+  (code "init" "init-system"))
 
 (programme "initramfs-init" libcurie
   (name "initramfs-init")
@@ -40,7 +40,7 @@
 
 (programme "ipc-hub" libcurie
   (name "ipc-hub")
-  (description "Kyuba IPC Hub")
+  (description "Kyuba IPC hub")
   (version "1")
 
   (libraries "duat" "kyuba")
@@ -49,9 +49,18 @@
 
 (programme "kyu" libcurie
   (name "ipc-client")
-  (description "Kyuba IPC Client")
+  (description "Kyuba IPC client")
   (version "1")
 
   (libraries "duat" "kyuba")
 
   (code "ipc-client"))
+
+(programme "power" libcurie
+  (name "power")
+  (description "Kyuba power control utility")
+  (version "1")
+
+  (libraries "syscall")
+
+  (code "power"))

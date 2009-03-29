@@ -26,31 +26,49 @@
  * THE SOFTWARE.
 */
 
-#ifndef KYUBA_IPC_H
-#define KYUBA_IPC_H
+#include <curie/main.h>
+#include <syscall/syscall.h>
+#include <linux/reboot.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <curie/sexpr.h>
-#include <duat/9p-client.h>
-#include <kyuba/script.h>
-
-define_symbol (sym_error,       "error");
-define_symbol (sym_disconnect,  "disconnect");
-
-void multiplex_kyu                ();
-
-void multiplex_add_kyu_sexpr      (struct sexpr_io *,
-                                   void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
-
-void kyu_command                  (sexpr command);
-void kyu_disconnect               ();
-
-#ifdef __cplusplus
+static int print_help ()
+{
+    return 1;
 }
-#endif
 
-#endif
+static int power_down ()
+{
+    sys_sync ();
+    sys_reboot (LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
+                LINUX_REBOOT_CMD_POWER_OFF, (void *)0);
+
+    return 2; /* not reached */
+}
+
+static int power_reset ()
+{
+    sys_sync ();
+    sys_reboot (LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
+                LINUX_REBOOT_CMD_RESTART, (void *)0);
+
+    return 3; /* not reached */
+}
+
+int cmain ()
+{
+    char *c = curie_argv[1];
+
+    if (c == (char *)0) return print_help ();
+
+    if ((c[0] == 'd') && (c[1] == 'o') && (c[2] == 'w') && (c[3] == 'n'))
+    {
+        return power_down();
+    }
+
+    if ((c[0] == 'r') && (c[1] == 'e') && (c[2] == 's') && (c[3] == 'e') &&
+        (c[4] == 't'))
+    {
+        return power_reset();
+    }
+
+    return print_help ();
+}
