@@ -159,6 +159,8 @@ int cmain ()
 {
     sexpr context = sx_end_of_list;
 
+    subprocess_read_handler = on_script_read;
+
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 

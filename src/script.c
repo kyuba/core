@@ -36,6 +36,8 @@
 
 struct sexpr_io *stdio;
 
+void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *) = (void *)0;
+
 struct sqelement {
     sexpr sx;
     sexpr context;
@@ -134,10 +136,15 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         x[i] = (char *)0;
 
         proccontext
-                = execute(EXEC_CALL_PURGE | EXEC_CALL_NO_IO |
-                          EXEC_CALL_CREATE_SESSION,
-                          x,
-                          curie_environment);
+                = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
+                          x, curie_environment);
+
+        if (subprocess_read_handler != (void *)0)
+        {
+            multiplex_add_sexpr
+                    (sx_open_io (proccontext->out, proccontext->in),
+                     subprocess_read_handler, (void *)context);
+        }
 
         if (proccontext->pid > 0)
         {
