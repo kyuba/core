@@ -4,7 +4,6 @@ rtf-*
 txt-*
 .sconsign.dblite
 monitor
-init
 reference
 initramfs-init
 build
