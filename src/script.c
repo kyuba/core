@@ -34,7 +34,7 @@
 #include <curie/shell.h>
 #include <kyuba/script.h>
 
-struct sexpr_io *stdio;
+extern struct sexpr_io *stdio;
 
 void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *) = (void *)0;
 
@@ -100,12 +100,20 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
     sexpr cur = sx;
     unsigned int length = 0;
     char do_io = 1;
+    define_symbol (sym_launch_with_io, "launch-with-io");
+    define_symbol (sym_launch_without_io, "launch-without-io");
 
     if (falsep (car (sx)))
     {
         cur = cdr (cur);
         do_io = 0;
     }
+
+    sx_xref (cur);
+    sexpr t = cons (((do_io == (char)1) ? sym_launch_with_io
+                                        : sym_launch_without_io), cur);
+    sx_write (stdio, cur);
+    sx_destroy (t);
 
     while (consp(cur))
     {
