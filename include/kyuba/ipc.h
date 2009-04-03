@@ -37,8 +37,6 @@ extern "C" {
 #include <duat/9p-client.h>
 #include <kyuba/script.h>
 
-define_symbol (sym_disconnect,  "disconnect");
-
 void multiplex_kyu                ();
 
 void multiplex_add_kyu_sexpr      (struct sexpr_io *,

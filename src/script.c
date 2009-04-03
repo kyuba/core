@@ -66,9 +66,11 @@ static void on_read_write_to_console (struct io *io, void *aux)
     }
 }
 
-static void on_console_close (struct io *io, void *aux)
+static void on_subprocess_close (struct io *io, void *aux)
 {
-    console = (struct io *)0;
+    sexpr t = cons (sym_client_disconnect, sx_end_of_list);
+    sx_write (stdio, t);
+    sx_destroy (t);
 }
 
 static void on_death (struct exec_context *ctx, void *u)
@@ -162,21 +164,13 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         }
         else
         {
-            if ((console == (struct io *)0) &&
-                ((console = io_open (2)) != (struct io *)0))
-            {
-                console->type = iot_write;
-                multiplex_add_io
-                        (console, (void *)0, on_console_close, (void *)0);
-            }
-
             proccontext
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
 
             multiplex_add_io
                     (proccontext->out,
-                     on_read_write_to_console, (void *)0, (void *)0);
+                     on_read_write_to_console, on_subprocess_close, (void *)0);
         }
 
         if (proccontext->pid > 0)

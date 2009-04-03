@@ -42,19 +42,21 @@ extern struct sexpr_io *stdio;
 extern struct io       *console;
 extern void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *);
 
-define_symbol (sym_on_ctrl_alt_del, "on-ctrl-alt-del");
-define_symbol (sym_ctrl_alt_del,    "ctrl-alt-del");
-define_symbol (sym_on_power_on,     "on-power-on");
-define_symbol (sym_on_power_reset,  "on-power-reset");
-define_symbol (sym_on_power_down,   "on-power-down");
-define_symbol (sym_always,          "always");
-define_symbol (sym_event,           "event");
-define_symbol (sym_power_reset,     "power-reset");
-define_symbol (sym_power_down,      "power-down");
-define_symbol (sym_run,             "run");
-define_symbol (sym_keep_alive,      "keep-alive");
-define_symbol (sym_exit,            "exit");
-define_symbol (sym_error,           "error");
+define_symbol (sym_on_ctrl_alt_del,   "on-ctrl-alt-del");
+define_symbol (sym_ctrl_alt_del,      "ctrl-alt-del");
+define_symbol (sym_on_power_on,       "on-power-on");
+define_symbol (sym_on_power_reset,    "on-power-reset");
+define_symbol (sym_on_power_down,     "on-power-down");
+define_symbol (sym_always,            "always");
+define_symbol (sym_event,             "event");
+define_symbol (sym_power_reset,       "power-reset");
+define_symbol (sym_power_down,        "power-down");
+define_symbol (sym_run,               "run");
+define_symbol (sym_keep_alive,        "keep-alive");
+define_symbol (sym_exit,              "exit");
+define_symbol (sym_error,             "error");
+define_symbol (sym_disconnect,        "disconnect");
+define_symbol (sym_client_disconnect, "client-disconnect");
 
 #ifdef __cplusplus
 }
