@@ -31,6 +31,7 @@
 #include <curie/memory.h>
 #include <curie/multiplex.h>
 #include <curie/network.h>
+#include <syscall/syscall.h>
 #include <duat/9p-server.h>
 #include <kyuba/ipc-9p.h>
 
@@ -194,6 +195,13 @@ static void on_client_disconnect (struct d9r_io *io, void *aux)
 
 int cmain()
 {
+    char *socket = KYU_9P_IPC_SOCKET;
+
+    if (curie_argv[1] != (char *)0)
+    {
+        socket = curie_argv[1];
+    }
+
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
@@ -219,7 +227,11 @@ int cmain()
     multiplex_add_sexpr (queue,  mx_sx_queue_read, (void *)0);
     multiplex_add_io    (io_buf, io_buf_read, (void *)0, (void *)0);
 
-    multiplex_add_d9s_socket (KYU_9P_IPC_SOCKET, fs);
+    multiplex_add_d9s_socket (socket, fs);
+
+#if defined(sys_chmod)
+    sys_chmod (socket, 0660);
+#endif
 
     while (multiplex() == mx_ok);
 
