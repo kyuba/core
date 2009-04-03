@@ -54,6 +54,7 @@ define_symbol (sym_power_down,      "power-down");
 define_symbol (sym_run,             "run");
 define_symbol (sym_keep_alive,      "keep-alive");
 define_symbol (sym_exit,            "exit");
+define_symbol (sym_error,           "error");
 
 #ifdef __cplusplus
 }

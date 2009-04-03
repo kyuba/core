@@ -37,7 +37,6 @@ extern "C" {
 #include <duat/9p-client.h>
 #include <kyuba/script.h>
 
-define_symbol (sym_error,       "error");
 define_symbol (sym_disconnect,  "disconnect");
 
 void multiplex_kyu                ();

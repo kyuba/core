@@ -51,12 +51,18 @@ static void on_read_write_to_console (struct io *io, void *aux)
 {
     if (console != (struct io *)0)
     {
+        sx_write (stdio, sym_event);
+
         unsigned int length = io->length - io->position;
         if (length > 0)
         {
             io_write (console, io->buffer + io->position, length);
             io->position += length;
         }
+    }
+    else
+    {
+        sx_write (stdio, sym_error);
     }
 }
 

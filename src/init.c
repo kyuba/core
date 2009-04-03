@@ -119,7 +119,6 @@ int cmain ()
 {
     static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
     define_string (str_monitor,    "monitor");
-    define_symbol (sym_error,      "error");
     define_symbol (sym_no_monitor, "no-monitor");
     define_symbol (sym_init,       "init");
 
