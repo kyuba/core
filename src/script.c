@@ -107,6 +107,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
     {
         cur = cdr (cur);
         do_io = 0;
+        sx = cur;
     }
 
     sx_xref (cur);
