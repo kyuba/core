@@ -171,6 +171,9 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
             multiplex_add_io
                     (proccontext->out,
                      on_read_write_to_console, on_subprocess_close, (void *)0);
+            multiplex_add_io
+                    (proccontext->in,
+                     on_read_write_to_console, on_subprocess_close, (void *)0);
         }
 
         if (proccontext->pid > 0)
