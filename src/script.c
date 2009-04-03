@@ -152,7 +152,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
             if (subprocess_read_handler != (void *)0)
             {
                 multiplex_add_sexpr
-                        (sx_open_io (proccontext->out, proccontext->in),
+                        (sx_open_io (proccontext->in, proccontext->out),
                          subprocess_read_handler, (void *)context);
             }
         }
