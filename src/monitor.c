@@ -61,6 +61,7 @@ static void *gm_recover(unsigned long int s)
 static void on_console_close (struct io *io, void *aux)
 {
     console = (struct io *)0;
+    sx_write (stdio, sym_client_disconnect);
 }
 
 static void do_dispatch_script (sexpr sx, sexpr context)
@@ -178,6 +179,10 @@ int cmain ()
     {
         console->type = iot_write;
         multiplex_add_io (console, (void *)0, on_console_close, (void *)0);
+    }
+    else
+    {
+        sx_write (stdio, sym_client_disconnect);
     }
 
     run_scripts();
