@@ -60,13 +60,6 @@ static void on_read_write_to_console (struct io *io, void *aux)
     }
 }
 
-static void on_subprocess_close (struct io *io, void *aux)
-{
-    sexpr t = cons (sym_client_disconnect, sx_end_of_list);
-    sx_write (stdio, t);
-    sx_destroy (t);
-}
-
 static void on_death (struct exec_context *ctx, void *u)
 {
     free_exec_context (ctx);
@@ -164,7 +157,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
 
             multiplex_add_io
                     (proccontext->in,
-                     on_read_write_to_console, on_subprocess_close, (void *)0);
+                     on_read_write_to_console, (void *)0, (void *)0);
         }
 
         if (proccontext->pid > 0)

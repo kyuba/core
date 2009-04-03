@@ -56,7 +56,6 @@ define_symbol (sym_keep_alive,        "keep-alive");
 define_symbol (sym_exit,              "exit");
 define_symbol (sym_error,             "error");
 define_symbol (sym_disconnect,        "disconnect");
-define_symbol (sym_client_disconnect, "client-disconnect");
 
 #ifdef __cplusplus
 }
