@@ -51,9 +51,12 @@ static void on_read_write_to_console (struct io *io, void *aux)
 {
     if (console != (struct io *)0)
     {
-        io_write (console,
-                  io->buffer + io->position,
-                  io->length - io->position);
+        unsigned int length = io->length - io->position;
+        if (length > 0)
+        {
+            io_write (console, io->buffer + io->position, length);
+            io->position += length;
+        }
     }
 }
 
@@ -153,14 +156,12 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         }
         else
         {
-            if (console == (struct io *)0)
+            if ((console == (struct io *)0) &&
+                ((console = io_open (2)) != (struct io *)0))
             {
-                if ((console = io_open_write (console_device))
-                    != (struct io *)0)
-                {
-                    multiplex_add_io
-                            (console, (void *)0, on_console_close, (void *)0);
-                }
+                console->type = iot_write;
+                multiplex_add_io
+                        (console, (void *)0, on_console_close, (void *)0);
             }
 
             proccontext
@@ -216,18 +217,12 @@ static void script_run(sexpr context, sexpr sx)
         sexpr scar = car(sx);
         sexpr scdr = cdr(sx);
 
-        if (truep(equalp(scar, sym_run)))
-        {
+        if (truep(equalp(scar, sym_run))) {
             sc_run (context, scdr);
-        } else if (truep(equalp(scar, sym_keep_alive)))
-        {
+        } else if (truep(equalp(scar, sym_keep_alive))) {
             sc_keep_alive (context, scdr);
-        } else if (truep(equalp(scar, sym_exit)))
-        {
+        } else if (truep(equalp(scar, sym_exit))) {
             cexit (sx_integer(scdr));
-        } else if (truep(equalp(scar, sym_console)))
-        {
-            console_device = (char *)sx_string (car (scdr));
         }
     }
 }
