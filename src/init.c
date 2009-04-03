@@ -81,13 +81,6 @@ enum signal_callback_result on_sig_int (enum signal signal, void *u)
 static void on_init_death (struct exec_context *ctx, void *u)
 {
     struct exec_context *context;
-    define_symbol (sym_launch_monitor, "launch-monitor");
-    define_symbol (sym_complete, "complete");
-    sexpr t = cons (sym_launch_monitor, cons (mbinary, sx_end_of_list));
-    sx_write (stdio, t);
-    sx_xref  (mbinary);
-    sx_destroy (t);
-
     if (ctx != (struct exec_context *)0)
     {
         free_exec_context (ctx);
@@ -109,10 +102,6 @@ static void on_init_death (struct exec_context *ctx, void *u)
             multiplex_add_process(context, on_init_death, (void *)0);
             break;
     }
-
-    t = cons (sym_complete, sx_end_of_list);
-    sx_write (stdio, t);
-    sx_destroy (t);
 }
 
 int cmain ()
