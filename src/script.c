@@ -112,7 +112,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
     sx_xref (cur);
     sexpr t = cons (((do_io == (char)1) ? sym_launch_with_io
                                         : sym_launch_without_io), cur);
-    sx_write (stdio, cur);
+    sx_write (stdio, t);
     sx_destroy (t);
 
     while (consp(cur))
@@ -135,6 +135,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
             if ((i == 0) && (s[0] != '/'))
             {
                 c = which (c);
+                sx_write (stdio, c);
                 if (falsep (c))
                 {
                     return (struct exec_context *)0;
