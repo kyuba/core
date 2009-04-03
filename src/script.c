@@ -99,6 +99,13 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
 {
     sexpr cur = sx;
     unsigned int length = 0;
+    char do_io = 1;
+
+    if (falsep (car (sx)))
+    {
+        cur = cdr (cur);
+        do_io = 0;
+    }
 
     while (consp(cur))
     {
@@ -135,15 +142,25 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         }
         x[i] = (char *)0;
 
-        proccontext
-                = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
-                          x, curie_environment);
-
-        if (subprocess_read_handler != (void *)0)
+        if (do_io == (char)1)
         {
-            multiplex_add_sexpr
-                    (sx_open_io (proccontext->out, proccontext->in),
-                     subprocess_read_handler, (void *)context);
+            proccontext
+                    = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
+                              x, curie_environment);
+
+            if (subprocess_read_handler != (void *)0)
+            {
+                multiplex_add_sexpr
+                        (sx_open_io (proccontext->out, proccontext->in),
+                         subprocess_read_handler, (void *)context);
+            }
+        }
+        else
+        {
+            proccontext
+                    = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION |
+                              EXEC_CALL_NO_IO,
+                              x, curie_environment);
         }
 
         if (proccontext->pid > 0)

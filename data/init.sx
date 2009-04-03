@@ -1,16 +1,16 @@
 (on-power-on
-  (run "rc" "sysinit")
+  (run #f "rc" "sysinit")
 
-  (run "rc" "boot")
+  (run #f "rc" "boot")
 
-  (run "rc" "default")
+  (run #f "rc" "default")
 
-  (keep-alive "agetty" "38400" "tty1" "linux")
-  (keep-alive "agetty" "38400" "tty2" "linux")
-  (keep-alive "agetty" "38400" "tty3" "linux")
-  (keep-alive "agetty" "38400" "tty4" "linux")
-  (keep-alive "agetty" "38400" "tty5" "linux")
-  (keep-alive "agetty" "38400" "tty6" "linux")
+  (keep-alive #f "agetty" "38400" "tty1" "linux")
+  (keep-alive #f "agetty" "38400" "tty2" "linux")
+  (keep-alive #f "agetty" "38400" "tty3" "linux")
+  (keep-alive #f "agetty" "38400" "tty4" "linux")
+  (keep-alive #f "agetty" "38400" "tty5" "linux")
+  (keep-alive #f "agetty" "38400" "tty6" "linux")
 
   (keep-alive "ipc-hub"))
 
@@ -18,9 +18,9 @@
   (power-reset))
 
 (on-power-reset
-  (run "rc" "reboot")
-  (run "power" "reset"))
+  (run #f "rc" "reboot")
+  (run #f "power" "reset"))
 
 (on-power-down
-  (run "rc" "shutdown")
-  (run "power" "down"))
+  (run #f "rc" "shutdown")
+  (run #f "power" "down"))

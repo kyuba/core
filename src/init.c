@@ -78,6 +78,7 @@ static void on_init_death (struct exec_context *ctx, void *u)
 {
     struct exec_context *context;
     define_symbol (sym_launch_monitor, "launch-monitor");
+    define_symbol (sym_complete, "complete");
     sexpr t = cons (sym_launch_monitor, cons (mbinary, sx_end_of_list));
     sx_write (stdio, t);
     sx_xref  (mbinary);
@@ -104,6 +105,10 @@ static void on_init_death (struct exec_context *ctx, void *u)
             multiplex_add_process(context, on_init_death, (void *)0);
             break;
     }
+
+    t = cons (sym_complete, sx_end_of_list);
+    sx_write (stdio, t);
+    sx_destroy (t);
 }
 
 int cmain ()
