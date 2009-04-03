@@ -46,9 +46,12 @@ struct sqelement {
 static char deferred = 0;
 static struct sqelement *script_queue = (struct sqelement *)0;
 static void sc_keep_alive(sexpr, sexpr);
+static void reopen_console ();
 
 static void on_read_write_to_console (struct io *io, void *aux)
 {
+    reopen_console();
+
     if (console != (struct io *)0)
     {
         io_write (console,
@@ -60,6 +63,19 @@ static void on_read_write_to_console (struct io *io, void *aux)
 static void on_console_close (struct io *io, void *aux)
 {
     console = (struct io *)0;
+    reopen_console();
+}
+
+static void reopen_console ()
+{
+    if (console == (struct io *)0)
+    {
+        if ((console = io_open_write (console_device)) != (struct io *)0)
+        {
+            multiplex_add_io
+                    (console, (void *)0, on_console_close, (void *)0);
+        }
+    }
 }
 
 static void on_death (struct exec_context *ctx, void *u)
@@ -154,15 +170,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         }
         else
         {
-            if (console == (struct io *)0)
-            {
-                if ((console = io_open_write (console_device))
-                    != (struct io *)0)
-                {
-                    multiplex_add_io
-                            (console, (void *)0, on_console_close, (void *)0);
-                }
-            }
+            reopen_console();
 
             proccontext
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
