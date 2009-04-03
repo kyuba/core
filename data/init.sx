@@ -1,3 +1,6 @@
+(always
+  (console "/dev/tty1"))
+
 (on-power-on
   (run #f "rc" "sysinit")
 

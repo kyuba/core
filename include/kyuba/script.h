@@ -39,7 +39,8 @@ void script_enqueue(sexpr context, sexpr sx);
 void script_dequeue();
 
 extern struct sexpr_io *stdio;
-extern struct io *console;
+extern struct io       *console;
+extern char            *console_device;
 extern void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *);
 
 define_symbol (sym_on_ctrl_alt_del, "on-ctrl-alt-del");
@@ -54,6 +55,7 @@ define_symbol (sym_power_down,      "power-down");
 define_symbol (sym_run,             "run");
 define_symbol (sym_keep_alive,      "keep-alive");
 define_symbol (sym_exit,            "exit");
+define_symbol (sym_console,         "console");
 
 #ifdef __cplusplus
 }

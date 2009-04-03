@@ -49,9 +49,12 @@ static void sc_keep_alive(sexpr, sexpr);
 
 static void on_read_write_to_console (struct io *io, void *aux)
 {
-    io_write (console,
-              io->buffer + io->position,
-              io->length - io->position);
+    if (console != (struct io *)0)
+    {
+        io_write (console,
+                  io->buffer + io->position,
+                  io->length - io->position);
+    }
 }
 
 static void on_console_close (struct io *io, void *aux)
@@ -153,7 +156,7 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         {
             if (console == (struct io *)0)
             {
-                if ((console = io_open_write ("/dev/console"))
+                if ((console = io_open_write (console_device))
                     != (struct io *)0)
                 {
                     multiplex_add_io
@@ -223,6 +226,9 @@ static void script_run(sexpr context, sexpr sx)
         } else if (truep(equalp(scar, sym_exit)))
         {
             cexit (sx_integer(scdr));
+        } else if (truep(equalp(scar, sym_console)))
+        {
+            console_device = (char *)sx_string (car (scdr));
         }
     }
 }
