@@ -35,6 +35,8 @@
 
 #include <kyuba/script.h>
 
+#define PATH "PATH=/bin:/sbin"
+
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
 {
     cexit(22);
@@ -119,6 +121,16 @@ int cmain ()
     define_symbol (sym_error,      "error");
     define_symbol (sym_no_monitor, "no-monitor");
     define_symbol (sym_init,       "init");
+
+    for (int i = 0; curie_environment[i] != (char *)0; i++)
+    {
+        char *y = curie_environment[i];
+        if ((y[0] == 'P') && (y[1] == 'A') && (y[2] == 'T') && (y[3] == 'H') &&
+            (y[4] == '='))
+        {
+            curie_environment[i] = PATH;
+        }
+    }
 
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
