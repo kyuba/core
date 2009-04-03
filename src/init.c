@@ -54,6 +54,7 @@ static sexpr mbinary = sx_false;
 
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
 {
+    sx_write (stdio, sx);
     sx_destroy (sx);
 }
 
