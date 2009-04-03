@@ -33,7 +33,7 @@
 #include <duat/9p-client.h>
 #include <kyuba/ipc-9p.h>
 
-static struct sexpr_io *stdio = (struct sexpr_io *)0;
+struct sexpr_io *stdio        = (struct sexpr_io *)0;
 static char o_send_commands   = (char)0;
 
 static void *rm_recover(unsigned long int s, void *c, unsigned long int l)

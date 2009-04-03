@@ -42,7 +42,7 @@ struct open_read_data
     struct open_read_data *next;
 };
 
-static struct sexpr_io       *stdio;
+struct sexpr_io              *stdio     = (struct sexpr_io *)0;
 static struct sexpr_io       *queue;
 static struct sexpr_io       *sx_io_buf;
 static struct io             *queue_io;

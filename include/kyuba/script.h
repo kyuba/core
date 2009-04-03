@@ -38,6 +38,8 @@ extern "C" {
 void script_enqueue(sexpr context, sexpr sx);
 void script_dequeue();
 
+extern struct sexpr_io *stdio;
+extern struct io *console;
 extern void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *);
 
 define_symbol (sym_on_ctrl_alt_del, "on-ctrl-alt-del");

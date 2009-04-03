@@ -34,7 +34,8 @@
 
 #include <kyuba/script.h>
 
-struct sexpr_io *stdio;
+struct sexpr_io *stdio = (struct sexpr_io *)0;
+struct io *console     = (struct io *)0;
 
 static enum gstate {
     gs_power_on,

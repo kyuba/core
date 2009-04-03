@@ -34,8 +34,6 @@
 #include <curie/shell.h>
 #include <kyuba/script.h>
 
-extern struct sexpr_io *stdio;
-
 void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *) = (void *)0;
 
 struct sqelement {
@@ -46,34 +44,20 @@ struct sqelement {
 };
 
 static char deferred = 0;
-
 static struct sqelement *script_queue = (struct sqelement *)0;
-
 static void sc_keep_alive(sexpr, sexpr);
 
-#if 0
-static sexpr lookup_symbol (sexpr context, sexpr key)
+static void on_read_write_to_console (struct io *io, void *aux)
 {
-    sexpr cur = context;
-
-    while (consp(cur))
-    {
-        sexpr sx_car = car(cur);
-
-        if (consp(sx_car))
-        {
-            if (truep(equalp(car(sx_car), key)))
-            {
-                return cdr(sx_car);
-            }
-        }
-
-        cur = cdr (cur);
-    }
-
-    return sx_nonexistent;
+    io_write (console,
+              io->buffer + io->position,
+              io->length - io->position);
 }
-#endif
+
+static void on_console_close (struct io *io, void *aux)
+{
+    console = (struct io *)0;
+}
 
 static void on_death (struct exec_context *ctx, void *u)
 {
@@ -167,10 +151,23 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         }
         else
         {
+            if (console == (struct io *)0)
+            {
+                if ((console = io_open_write ("/dev/console"))
+                    != (struct io *)0)
+                {
+                    multiplex_add_io
+                            (console, (void *)0, on_console_close, (void *)0);
+                }
+            }
+
             proccontext
-                    = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION |
-                              EXEC_CALL_NO_IO,
+                    = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
+
+            multiplex_add_io
+                    (proccontext->out,
+                     on_read_write_to_console, (void *)0, (void *)0);
         }
 
         if (proccontext->pid > 0)

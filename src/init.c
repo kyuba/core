@@ -49,9 +49,10 @@ static void *gm_recover(unsigned long int s)
     return (void *)0;
 }
 
+struct sexpr_io *stdio = (struct sexpr_io *)0;
+
 static const char **commandline;
 static struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
-static struct sexpr_io *stdio = (struct sexpr_io *)0;
 static sexpr mbinary = sx_false;
 
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
