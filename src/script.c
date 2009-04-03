@@ -51,18 +51,12 @@ static void on_read_write_to_console (struct io *io, void *aux)
 {
     if (console != (struct io *)0)
     {
-        sx_write (stdio, sym_event);
-
         unsigned int length = io->length - io->position;
         if (length > 0)
         {
             io_write (console, io->buffer + io->position, length);
             io->position += length;
         }
-    }
-    else
-    {
-        sx_write (stdio, sym_error);
     }
 }
 
@@ -168,9 +162,6 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
 
-            multiplex_add_io
-                    (proccontext->out,
-                     on_read_write_to_console, on_subprocess_close, (void *)0);
             multiplex_add_io
                     (proccontext->in,
                      on_read_write_to_console, on_subprocess_close, (void *)0);
