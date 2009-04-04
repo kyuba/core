@@ -50,23 +50,17 @@ static void *gm_recover(unsigned long int s)
 
 static int print_help ()
 {
-    define_symbol (sym_kyu,          "kyu");
-    define_symbol (sym_options,      "[-HDRi]");
-    define_symbol (sym_option,       "option");
-    define_string (str_H,            "H");
-    define_string (str_D,            "D");
-    define_string (str_R,            "R");
-    define_string (str_i,            "i");
-    define_string (str_dshutdown,    "shut down the computer.");
-    define_string (str_dreboot,      "re-boot the computer.");
-    define_string (str_dinteractive, "enter interactive mode.");
+#define help "kyu (-H|-D|-R|-i)\n\n\
+Options:\n\
+  -H, -D  shut down the computer\n\
+  -R      re-boot the computer\n\
+  -i      enter interactive mode\n"
+    struct io *out = io_open (1);
+    if (out != (struct io *)0)
+    {
+        io_write (out, help, (sizeof (help) -1));
+    }
 
-    sx_write (stdio, cons (sym_kyu, cons (sym_options, sx_end_of_list)));
-    sx_write (stdio, cons (sym_option, cons (cons (str_H, cons (str_D, sx_end_of_list)), cons (str_dshutdown, sx_end_of_list))));
-    sx_write (stdio, cons (sym_option, cons (str_R, cons (str_dreboot, sx_end_of_list))));
-    sx_write (stdio, cons (sym_option, cons (str_i, cons (str_dinteractive, sx_end_of_list))));
-
-    sx_close_io (stdio);
     return 1;
 }
 

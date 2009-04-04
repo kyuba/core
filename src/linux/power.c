@@ -27,11 +27,23 @@
 */
 
 #include <curie/main.h>
+#include <curie/io.h>
 #include <syscall/syscall.h>
 #include <linux/reboot.h>
 
 static int print_help ()
 {
+#define help "power (reset|down)\n\n\
+Commands:\n\
+  down   shut down the computer (immediately)\n\
+  reset  re-boot the ocmputer (immediately)\n"
+
+    struct io *out = io_open (1);
+    if (out != (struct io *)0)
+    {
+        io_write (out, help, (sizeof (help) -1));
+    }
+
     return 1;
 }
 
