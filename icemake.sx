@@ -43,7 +43,7 @@
   (description "Kyuba IPC hub")
   (version "1")
 
-  (libraries "duat" "kyuba")
+  (libraries "duat" "kyuba" "syscall")
 
   (code "ipc-hub"))
 

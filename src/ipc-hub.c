@@ -229,7 +229,7 @@ int cmain()
 
     multiplex_add_d9s_socket (socket, fs);
 
-#if defined(sys_chmod)
+#if defined(have_sys_chmod)
     sys_chmod (socket, 0660);
 #endif
 
