@@ -1,0 +1,405 @@
+\documentclass[a4paper,twoside,titlepage]{article}
+\usepackage[top=3cm,bottom=3cm,left=3cm,right=3cm]{geometry}
+\usepackage{url}
+
+\renewcommand\familydefault{\sfdefault}
+
+\title{Kyuuba}
+\author{Magnus Achim Deininger}
+
+\begin{document}
+
+Kyuuba is an init programme for POSIX-ish systems, that is intended to replace
+the current de-facto standard SysV-style and BSD-style init programmes.
+
+Design goals include complete independence of shell scripts, speed, small memory
+and on-disk footprints, portability (it should run on at least Linux, *BSD,
+Darwin and all applicable parts should run on Windows), flexibility and it
+should aid in virtualisation and service jailing.
+
+\paragraph{Note}
+When speaking of Windows in this article, this specifically includes
+re-implementations such as ReactOS.
+
+\paragraph{Note}
+This is the original description paper i wrote before actually starting on kyuba
+and it hasn't really been audited much since then, except for converting it from
+docbook to latex.
+
+\section*{Introduction}
+Kyuuba isn't a completely new programme, actually it's a redesign and rewrite of
+eINIT. eINIT was, and still is, modular and fast, but we hit a good deal of
+obstacles that can't be fixed due to the original design, and at the same time
+due to nobody really enforcing that original design.
+
+A lot of the basic goals for kyuba have thus been influenced by eINIT and the
+experience we've gotten with that. Our goals are:
+
+\begin{description}
+\item[Speed]
+Computers should boot fast, and there is absolutely no reason to have them boot
+slow like they do these days. This is especially important for any embedded
+application and for things like backup servers that shouldn't be running all the
+time, but that need to be able to get online as fast as possible. For these
+applications, slow bootup times are generally annoying and often make the
+manufacturer of the device look unprofessional.
+
+\item[Small Size (Memory- and On-Disk)]
+Init programmes usually need to run at all times, thus they count against the
+available RAM at all times. For that reason, an init should be as small as
+possible so that the programmes it initialises have as much ram available to
+them as possible.
+
+\item[Parallelisation]
+A lot of time in the boot process is spent waiting on other processes to do
+something. Doing nothing while waiting is generally a bad thing to do if we want
+the whole bootup process to be fast, especially considering that some tasks
+always take time, such as getting an IP address via DHCP.
+
+\item[Modularity]
+Our goal is to get a core application with a 1.0 release out as fast as
+possible, but we can't possibly foresee all the potential applications of this
+programme beforehand. For this reason, we need a strong module interface, so
+that extra functionality can easily added to the core, without modifying the
+core.
+
+\item[No Shell Scripting]
+Shell scripts are slow, but they're handy. For this reason, shell scripting is
+still extremely popular among Unix veterans. But just because shell scripting is
+handy, and it's perceived as one way to add flexibility, it isn't the only way
+to add flexibility. With a properly designed client library, even C should be
+easy enough to use to cover the typical applications of Shell Scripting in the
+bootup process.
+
+\item[No 'real' Threading]
+The first few versions of eINIT relied on heavy threading, but that turned out
+to create a lot of problems. Eventually the overhead of threading made that
+approach slower than a custom "green thread" implementation that we tried in a
+few unreleased versions.
+
+Green threads as well as message-passing style threads should suffice for our
+applications, since there are no calculations that could benefit from
+multi-processing, and most of time init is only supposed to spawn a number of
+other processes in the right order.
+
+\item[Service Supervision]
+We think that supervising running services is exactly the type of thing that an
+init programme should be doing. If a service dies for some reason, oftentimes
+users will want that service to respawn as fast as possible, or they want some
+other actions to be taken, and since init needs to supervise all processes
+anyway, this is exactly the type of thing it should be doing at the same time.
+
+\item[Proper handling of unexpected Situations]
+If a daemon fails to start, there's often alternative daemons that may take its
+place; for example if a user is only interested in a graphical login screen and
+using the computer with a GUI, and after updating his gnome installation for
+some reason gdm keeps failing, the user will probably prefer a kdm or slim login
+screen instead of a text mode prompt, which would leave him with a plain shell
+after entering his login data instead of some GUI the user is actually used to.
+
+\item[No need to follow legacy Examples]
+One of the things that severely hurt eINIT was that we tried to keep all the
+legacy applications working. While this will still be possible with a properly
+modular design, we made the mistake of doing this right from the start instead
+of just adding it afterwards. This resulted in a lot of confusion with both the
+users and developers as to what behaviour can be expected in some circumstances.
+
+\item[Portability]
+Even though the init programme is normally considered to be one of the prime
+examples of a system-dependant application, we'd like to make sure that this
+programme will run on all the usual operating systems: *BSD, Linux, Darwin,
+hopefully also Windows (at least some portions of kyuuba should run perfectly
+fine on Windows).
+
+\end{description}
+
+Additionally, the programme will be licenced under a BSD-style licence, which
+means it will be truly free, but also properly usable in a business setting.
+
+\section{Kyuuba Core Components}
+Kyuuba will be split into several components that should interact with each
+other. Splitting kyuuba into multiple programmes will help with reclaiming
+memory used by components that aren't used very often, and it increases
+stability and modularity of the whole system.
+
+\subsection{C Library}
+Even though C is perfectly suited for writing programmes that work fast as well
+as doing so with tight memory constraints, it's also notorious for needing quite
+an effort to keep the code portable. For this reason, we'll be writing a special
+C library that serves as a portability layer, as well as a high level
+abstraction layer.
+
+The library is written in such a way that it is easily made freestanding, that
+is, so that it won't require the host libc, in order to reduce memory use. It's
+also designed to only support the functions kyuuba will be needing.
+
+Work on this library has already started under codename `Curie'. The library
+includes almost all the features we'll be needing, and the freestanding variants
+turned out to be significantly smaller than most of the host libcs we compared
+it against. (typically about 16k in statically linked amd64 binaries vs. about
+300-600k).
+
+\subsection{The Monitor}
+The monitor is kyuuba's equivalent of the regular /sbin/init programme, the
+component that is always running as PID=1.
+
+The purpose of this programme is to spawn the coordinators, reap dead processes
+as well as keep track of the service statuses as spawned by the coordinators and
+keep track of any status information from suspended coordinators and servers.
+
+There's going to be slightly different implementations of this programme,
+depending on the host OS, and othe factors. For example, if the monitor is run
+off an initramfs as opposed to running directly off a target partition, it will
+also need to mount the required root filesystems.
+
+A minimalistic implementation of this would be running directly off a root
+filesystem and thus not require any mounting logic or additional configuration.
+
+\subsection{The Coordinators}
+The coordinators are daemons spawned by the monitor to coordinate service status
+changes and dealing with configuration data. Coordinators are distinctly
+different programmes from the monitors, because they may need to need more
+fine-grained adjustments to the configuration format of a given distribution
+it's supposed to coordinate.
+
+Coordinators will also have the ability to be suspended and resumed. Data needed
+for resuming a coordinator will be sent to the launching monitor and provided to
+the coordinator by the monitor when resuming.
+
+\subsection{Servers}
+Anything that needs to run longer than a coordinator, and which extends the
+functionality of kyuuba by doing so, will be called a server. Examples of such
+programmes would be daemons that keep track of computer status changes, such as
+a closing/opening the lid on laptops, pressing the power or reset button, power
+outages with a connected APU, connecting or disconnecting an AC adapter on a
+laptop or other battery-powered device or even supplying an emulation for the
+/dev/initctl interface of sysv-style init programmes.
+
+Servers will also be used to provide user feedback. This means that neither the
+monitors, nor the coordinators will include code to notify the user of any
+changes; Instead they will only log any activities, and a specialised server
+will then do appropriate feedback, for example it would print startup messages
+on a system console, or do logging for the system to syslog. In eINIT, this
+rather radical approach proved to be very useful, as it allowed to bring up the
+boot messages on a terminal emulator under X, and it allows for alternative
+forms of feedback to be developed, such as aural feedback for computers to be
+used by blind persons, or for situations where visual feedback is otherwise
+inappropriate or even unavailable, such as appliances without any display
+devices. With a good TTS system, this could be used to vocalise system warning
+messages to the user of a computer or appliance running kyuuba.
+
+\subsection{The IPC System}
+All communications between the programmes will be done using S-expressions in
+regular text form. Spawned processes will be connected to the spawning programme
+via regular stdio file descriptors. Stdin and stdout file descriptors have an
+obvious use here; stderr will be connected to the monitor programme for error
+logging.
+
+This type of communication makes debugging and coordinator/server testing
+extremely easy, and S-expressions are extremely easy to parse. There could also
+be a binary encoding for the S-expressions to increase I/O throughput, although
+this is unlikely to be required as S-expressions should be sufficiently fast to
+parse.
+
+We'll also develop a simple library for programmes to use this IPC system.
+
+\section{Metadata and Configuration}
+Metadata and configuration data will be stored in flat files, using
+S-expressions. For performance or compatibility reasons, alternative encodings
+may also be used by writing configuration backend modules.
+
+\subsection{Service Model}
+Instead of the immensely popularised event-based model, we'll stick with a
+dependency-based model to coordinate launching of services. This is because,
+while dependencies may seem like heavier-weight than than launching services on
+events, it's easier to coordinate all of the services so that all the order
+constraints fit together, while still being able to achieve proper
+parallelisation for starting services.
+
+\subsection{Dependencies}
+The dependencies will be expressed as a big graph; this will be a digraph with
+four types of nodes and two types of edges. The first node is a special root
+node that will be used as a starting point whenever services need to start.
+Apart from that, we'll need two types of nodes for each service, a start node
+and an end node, and we'll need `action nodes'. These action nodes lie `between'
+the start and end nodes, and plain edges connect the start nodes through the
+action nodes with an end node.
+
+To enable a service, all we need to do is find a path from the root node to the
+end node of a service. Once a path is found, it is simply walked and all the
+actions described in the action nodes along the path are taken. If an action
+fails, the node is disconnected and a new path is searched; this allows for
+fallback behaviour, where different implementations of a specific service exist,
+for example daemons like fcron and vixie-cron, which could both provide a mutual
+cron service, and if fcron fails to start, its action node is disconnected, and
+searching a new path would find one that uses an action node that starts
+vixie-cron.
+
+Once an end-node for a service is reached, a special shortcut edge is added
+between the start node and the end node of that service. When subsequently
+starting other services that depend on that service, the shortcut edge will be
+used instead of the plain edges so that there's no special handling required to
+avoid taking actions described in any action nodes.
+
+To disable a service again, for example when shutting down, all that needs to be
+done is searching a path from an end node to the root node, and clearing the
+shortcut edges whenever a start node is passed. Since the graph is directed,
+this means there's a need for extra action nodes for stopping a service, which
+conveniently fits the whole model, since different actions need to be taken to
+disable a service.
+
+\subsubsection{Advantages}
+This whole graph model has the advantage of easily being enhanceable with
+additional node or edge types for more complex layouts. The model here should be
+able to handle the most common dependency types, such as
+x-requires-y(,z(,u(,v(...)))) and x-should-be-started-if-y-fails. With minimal
+adjustments and by introducing simple coordinator nodes and edges, it'll also be
+able to express dependencies such as x-must-be-started-before-or-after-y and
+x-should-always-be-started-if-installed or one could add things like join-nodes,
+where all the currently active graph walking operations that would need to pass
+through such a node would be required to join up.
+
+Depending on the 'resolution' of the graph, that is, for example, whether one
+considers each mountpoint to be a distinct service or only the whole 'mounting'
+issue, this also allows for an elegant parallelisation of tasks such as mounting
+filesystems, like in the example, filesystem checks, or bringing up different
+network interfaces, which oftentimes incur a notable lag due to wlan
+authentication or dhcp configuration.
+
+Also, this graph adds additional transparency to users and developers, sich each
+state of the dependency graph can be visualised with tools like graphviz, to
+help in tracing seemingly strange waiting behaviour of the overall coordination
+and parallelisation process.
+
+\subsection{Configuration}
+Configuration data, as well as dependency metadata and action descriptions are
+all to be stored in S-expressions in the applicable configuration directory
+(either /kyu/etc, /etc/kyu or /kyu). There's not that much configuration data
+going to be needed for kyuuba itself, most of the data would be for tweaking
+services and for defining which services to start.
+
+Dependency metadata needed to construct the dependency graphs will be written in
+the same way, since S-expressions should be well-suited for this task and being
+able to use the same parser for both reduces the size of the code.
+
+\section{OS Requirements}
+Trying to cope with everything we encountered was one of the major causes of
+grief in eINIT. To prevent this, we'll instead be setting a number of
+requirements for a host OS for kyuuba, which should help us avoid a lot of the
+issues we encountered with eINIT.
+
+\subsection{Initramfs/Micro-bootstrap-partition}
+The cleanest way to use kyuuba will be by means of a custom initramfs or a small
+partition with only kyuuba on it.
+
+This method of using kyuuba will have a few very distinct advantages, such as
+being able to actually unmount the root-filesystem(s) before shutting down,
+since the code could easily use the chroot-facility to get into any filesystems
+we want to use. Currently it's not possible to actually unmount a
+root-filesystem on Linux systems, it's only possible to remount such a
+filesystem read-only, which should be considered less `clean' than actually
+unmounting the filesystem.
+
+Also, this approach has the nice advantage of being more appealing by
+introducing fewer special cases to consider when used in combination with
+chroot-jailed services, as well as adjusting the configuration for daemons like
+udev to our needs.
+
+This obviously relies on a system with the ability to use chroots, but a similar
+effect should be achievable on any system with filesystem namespaces (such as
+plan9).
+
+Windows/ReactOS seem to be lacking in support for both chrooting and filesstem
+namespaces, so this doesn't apply to those systems.
+
+\subsection{FS Layout}
+Kyuuba will need to rely on a few characteristics of the used filesystems. In
+general, depending on the use of kyuuba, we could easily eliminate the need for
+certain configuration files in /etc, such as fstab and mtab, however this proved
+too hard to get accepted by the community in eINIT, so this is not going to be a
+required adjustment for kyuuba to work.
+
+\subsubsection{General Layout}
+Ideally, kyuuba will be used on a system with a proper FHS layout, and kyuuba's
+monitor will run directly off an initramfs or a small bootstrap partition, where
+it will be responsible for mounting the root filesystem(s) of an arbitrary
+number of (compatible) systems to boot.
+
+\subsubsection{Kyuuba Files}
+For FHS-compliant Linux systems, all kyuuba-related files are to be put under
+/lib/kyu or / of a given partition. All configuration data is to be stored under
+/etc/kyu. Binaries under /sbin will probably not be needed, since FHS systems
+are supposed to be bootstrapped using an initramfs or a similar filesystem that
+contains kyuuba's monitor, which is well capable of searching for servers and
+coordinators in /lib/kyu as opposed to /sbin or /bin.
+
+In a pure, kyuuba-only system, /sbin/init may be a non-initramfs kyuuba monitor.
+
+The monitors should alternatively accept the inverse of this layout, that is
+/kyu/lib and /kyu/etc, since for certain uses, such as jailing services, this is
+less intrusive. With this layout, /kyu and /kyu/etc should both work the same.
+
+*BSD variants should be able to use the same convention without breaking any
+traditional FS designs. Windows ports should also be able to follow this layout,
+although the latter layout could be seen as less intrusive.
+
+Alternative FS layouts should use analoguous locations. For example for project
+`Marco Polo', we'd be using the regular /os/arch/lib and /config/kyu directories
+if it's running off its own dedicated partition, or /os/arch/lib/kyu if it
+wasn't.
+
+\section{Module Interface}
+One of the goals is to have a highly modular design so we can get a 1.0 release
+out as fast as possible while still being able to extend the functionality
+afterwards. For this reason, we need a well designed interface to extend the
+core functionality.
+
+For flexibility, we want to implement all of the following three methods to
+provide a proper environment to work in. Some of the 'loaders' here would be
+modules themselves, so that for specific uses of kyuuba, useless loaders could
+easily be omitted.
+
+All three of these methods will provide the exact same interface on the
+source-code level, which means the burden of adjusting things for the method to
+use is put on the build system, not the addon-developer.
+
+\subsection{Shared Objects}
+An obvious way to provide this type of extensibility is to use shared objects,
+or .dll files in Windows. This type of interface is handy, but it has some
+disadvantages in terms of memory use, and in general the compiler for both the
+.so/.dll file and the loading programme can't do all the optimisations it would
+normally be able to do. This typically results in a larger combined binary size,
+both on disk and in memory.
+
+We tackled this issue in eINIT by making meta-modules to load, that is make a
+collection of shared objects, link them all together as a single shared object
+which then loads the built-in modules. This approach led to a significant
+reduction in memory use, while keeping large parts of the flexibilty of the
+concept.
+
+\subsection{Statically Linked Modules}
+Another fairly obvious approach is linking modules directly into the core. This
+approach allows the C-compiler to do more optimisations than it ordinarily
+could, resulting in smaller binaries and a lower memory-profile. On the other
+hand, it requires the modules to be available in either source or object form at
+compile/link-time, which decreases the flexibility of this type of module a bit.
+Still, implementing this type of module has obvious advantages on
+memory-constrained systems.
+
+\subsection{Module Hubs}
+Since the core design of kyuuba also includes spawnable servers and a strong IPC
+subsystem, it would be easy to make a server that has an IPC link to a monitor
+or a coordinator, and which offers the same interface for shared-object and
+statically-linked modules.
+
+This may seem like an odd way to extend core functionality, however this method
+has two distinct advantages over the other two methods: for one thing, it
+increases the overall stability of the system, since this way modules can be
+loaded in different address spaces even though they will all be able to work
+together closely, thanks to the IPC subsystem. This hardens the monitor and
+coordinators against issues like segmentation faults and memory limitations.
+Also, since servers are supposed to be able to suspend themselves, this allows
+reclaiming of memory from modules that aren't being used very often, by grouping
+those together and suspending the corresponding server.
+
+\end{document}

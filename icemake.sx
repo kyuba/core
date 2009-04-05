@@ -7,7 +7,9 @@
   (code "script" "ipc" "ipc-9p")
 
   (headers
-        "script" "ipc" "ipc-9p"))
+        "script" "ipc" "ipc-9p")
+  (documentation
+        "description"))
 
 (programme "monitor" libcurie
   (name "monitor")
