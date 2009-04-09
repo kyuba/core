@@ -62,6 +62,8 @@
      "couldn't pivot_root('" LRTMPPATH "', '" LRTMPPATH "/old')"
 #define MSG_UNMOUNTED ": unmounted\n"
 #define MSG_NOT_UNMOUNTED ": NOT unmounted\n"
+#define MSG_KILLING "Killing everything...\n"
+#define MSG_UNMOUNTING "Unmounting everything...\n"
 
 static int out = 2;
 
@@ -110,6 +112,8 @@ static int unmount_everything()
     int errors    = 0,
         positives = 0,
         fd;
+
+    sys_write (out, MSG_UNMOUNTING, sizeof(MSG_UNMOUNTING)-1);
 
     if ((fd = sys_open ("/proc/mounts", 0, 0)) >= 0) {
         char cbuffer[BUFFERSIZE];
@@ -259,6 +263,8 @@ static int unmount_everything()
 
 static void kill_everything()
 {
+    sys_write (out, MSG_KILLING, sizeof(MSG_KILLING)-1);
+
     for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill 1 (us) */
         sys_kill(pid, 9 /* SIGKILL */);
     }
