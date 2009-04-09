@@ -61,6 +61,8 @@
 #define MSG_PIVOT_ROOT_FAILED\
      "couldn't pivot_root('" LRTMPPATH "', '" LRTMPPATH "/old')"
 
+static int out = 2;
+
 #define whitespacep(c)\
 (((c) == ' ')  || ((c) == '\t') || ((c) == '\v') ||\
  ((c) == '\n') || ((c) == '\r'))
@@ -271,26 +273,24 @@ static void close_all_loops()
 
 static void prune_file_descriptors()
 {
-    sys_write (2, MSG_PRUNE, sizeof(MSG_PRUNE)-1);
+    sys_write (out, MSG_PRUNE, sizeof(MSG_PRUNE)-1);
 
     for (int i = 0; i < 4096 * 8; i++) {
         sys_close (i);
     }
 }
 
-static void reopen_stdio()
+static void reopen_stdout()
 {
-    sys_open (CONSOLE, 0 /* O_RDONLY */, 0); /* open stdin */
-    sys_open (CONSOLE, 1 /* O_WRONLY */, 0); /* open stdout */
-    sys_open (CONSOLE, 1 /* O_WRONLY */, 0); /* open stdio */
+    out = sys_open (CONSOLE, 1 /* O_WRONLY */, 0); /* open stdout */
 
-    sys_write (2, MSG_REOPEN, sizeof(MSG_REOPEN)-1);
+    sys_write (out, MSG_REOPEN, sizeof(MSG_REOPEN)-1);
 }
 
-static void prune_reopen ()
+static void prune ()
 {
     prune_file_descriptors();
-    reopen_stdio();
+    reopen_stdout();
 }
 
 static void create_loops ()
@@ -308,7 +308,7 @@ static void create_loops ()
 static void lastrites()
 {
     if (sys_mount("lastrites", LRTMPPATH, "tmpfs", 0, "")) {
-        sys_write (2, MSG_MOUNT_TMPFS_FAILED, sizeof(MSG_MOUNT_TMPFS_FAILED)-1);
+        sys_write (out, MSG_MOUNT_TMPFS_FAILED, sizeof(MSG_MOUNT_TMPFS_FAILED)-1);
     }
 
     sys_mkdir(LRTMPPATH "/old", 0777);
@@ -321,28 +321,28 @@ static void lastrites()
 
     int ldev = (5 << 8) | 1;
     sys_mknod(LRTMPPATH "/dev/console", 0x2000 /* S_IFCHR */, ldev);
-    ldev = (4 << 8) | 1;
-    sys_mknod(LRTMPPATH "/dev/tty1", 0x2000 /* S_IFCHR */, ldev);
-    ldev = (1 << 8) | 3;
-    sys_mknod(LRTMPPATH "/dev/null", 0x2000 /* S_IFCHR */, ldev);
+//    ldev = (4 << 8) | 1;
+//    sys_mknod(LRTMPPATH "/dev/tty1", 0x2000 /* S_IFCHR */, ldev);
+//    ldev = (1 << 8) | 3;
+//    sys_mknod(LRTMPPATH "/dev/null", 0x2000 /* S_IFCHR */, ldev);
 
     if (sys_mount("lastrites-proc", LRTMPPATH "/proc", "proc", 0, ""))
     {
-        sys_write (2, MSG_MOUNT_PROC_FAILED, sizeof(MSG_MOUNT_PROC_FAILED)-1);
+        sys_write (out, MSG_MOUNT_PROC_FAILED, sizeof(MSG_MOUNT_PROC_FAILED)-1);
     }
 
     sys_chdir(LRTMPPATH "/old");
 
     if (sys_pivot_root(LRTMPPATH, LRTMPPATH "/old"))
     {
-        sys_write (2, MSG_PIVOT_ROOT_FAILED, sizeof(MSG_PIVOT_ROOT_FAILED)-1);
+        sys_write (out, MSG_PIVOT_ROOT_FAILED, sizeof(MSG_PIVOT_ROOT_FAILED)-1);
     }
 
     sys_chdir("/");
 
     char max_retries = MAX_RETRIES;
 
-    prune_reopen ();
+    prune ();
 
     do {
         max_retries--;
@@ -358,9 +358,9 @@ int cmain ()
 {
     char action = curie_argv[1] ? curie_argv[1][0] : '?';
 
-    sys_write (2, MSG_INTRO, sizeof(MSG_INTRO) -1);
+    sys_write (out, MSG_INTRO, sizeof(MSG_INTRO) -1);
 
-    prune_reopen ();
+    prune ();
 
     lastrites();
 
@@ -369,23 +369,23 @@ int cmain ()
 #if defined(LINUX_REBOOT_MAGIC1) && defined (LINUX_REBOOT_MAGIC2) && defined (LINUX_REBOOT_CMD_KEXEC) && defined (__NR_reboot)
             sys_reboot (LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
                         LINUX_REBOOT_CMD_KEXEC, 0);
-            sys_write (2, MSG_KEXEC_FAILED, sizeof(MSG_KEXEC_FAILED)-1);
+            sys_write (out, MSG_KEXEC_FAILED, sizeof(MSG_KEXEC_FAILED)-1);
 #else
-            sys_write (2, MSG_NO_KEXEC, sizeof(MSG_NO_KEXEC)-1);
+            sys_write (out, MSG_NO_KEXEC, sizeof(MSG_NO_KEXEC)-1);
 #endif
 
         case 'r':
             sys_reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
                        LINUX_REBOOT_CMD_RESTART, 0);
-            sys_write (2, MSG_CANT_REBOOT, sizeof(MSG_CANT_REBOOT)-1);
+            sys_write (out, MSG_CANT_REBOOT, sizeof(MSG_CANT_REBOOT)-1);
 
         case 'd':
             sys_reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
                        LINUX_REBOOT_CMD_POWER_OFF, 0);
-            sys_write (2, MSG_CANT_SHUT_DOWN, sizeof(MSG_CANT_SHUT_DOWN)-1);
+            sys_write (out, MSG_CANT_SHUT_DOWN, sizeof(MSG_CANT_SHUT_DOWN)-1);
 
         default:
-            sys_write (2, MSG_EXITING, sizeof(MSG_EXITING)-1);
+            sys_write (out, MSG_EXITING, sizeof(MSG_EXITING)-1);
     }
 
     return 0;
