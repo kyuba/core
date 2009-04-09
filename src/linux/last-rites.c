@@ -60,6 +60,8 @@
 #define MSG_MOUNT_TMPFS_FAILED "couldn't mount my tmpfs at " LRTMPPATH
 #define MSG_PIVOT_ROOT_FAILED\
      "couldn't pivot_root('" LRTMPPATH "', '" LRTMPPATH "/old')"
+#define MSG_UNMOUNTED ": unmounted\n"
+#define MSG_NOT_UNMOUNTED ": NOT unmounted\n"
 
 static int out = 2;
 
@@ -200,7 +202,11 @@ static int unmount_everything()
                             (fs_file[1] == 'o') && (fs_file[2] == 'l') &&
                             (fs_file[3] == 'd'))
                         {
+                            int ixl;
                             /* still mounted */
+
+                            for (ixl = 0; fs_file[ixl]; ixl++);
+                            sys_write (out, fs_file, ixl);
 
                             if (
 #if defined(have_sys_umount)
@@ -222,13 +228,17 @@ static int unmount_everything()
                                 /* ... else there's been some bad data trying to
                                    parse /proc/mounts */
 
-                                /*
-                                 * can't hurt to try this one 
-                                 */
+                                /* can't hurt to try this one  */
                                 sys_umount2(fs_file, 4 /* MNT_EXPIRE */);
                                 sys_umount2(fs_file, 4 /* MNT_EXPIRE */);
+
+                                sys_write (out, MSG_NOT_UNMOUNTED,
+                                           sizeof(MSG_NOT_UNMOUNTED)-1);
                             } else {
                                 positives = 1; /* unmounted successfully */
+
+                                sys_write (out, MSG_UNMOUNTED,
+                                           sizeof(MSG_UNMOUNTED)-1);
                             }
                         }
                     }
