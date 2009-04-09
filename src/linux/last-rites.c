@@ -263,10 +263,13 @@ static int unmount_everything()
 
 static void kill_everything()
 {
+    static int mypid = 0;
+    if (mypid == 0) mypid = sys_getpid();
+
     sys_write (out, MSG_KILLING, sizeof(MSG_KILLING)-1);
 
-    for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill 1 (us) */
-        sys_kill(pid, 9 /* SIGKILL */);
+    for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill 1 (and us) */
+        if (pid != mypid) sys_kill(pid, 9 /* SIGKILL */);
     }
 }
 

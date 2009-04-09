@@ -94,7 +94,9 @@ static void on_init_death (struct exec_context *ctx, void *u)
     {
         case 0:
         case -1:
-            cexit(25);
+            break; /* this is bad, but it should only happen during a
+                      last-rites() call, or when the monitor dies during a very
+                      bad moment while updating kyuba. */
         default:
             monitorconnection = sx_open_io (context->in, context->out);
 
