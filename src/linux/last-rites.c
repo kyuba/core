@@ -376,6 +376,7 @@ static void lastrites()
     do {
         max_retries--;
 
+        sys_sync();
         kill_everything();
         sys_sync();
         close_all_loops();
