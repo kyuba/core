@@ -263,7 +263,7 @@ static int unmount_everything()
 
 static void kill_everything()
 {
-    static int mypid = sys_getpid();
+    int mypid = sys_getpid();
 
     sys_write (out, MSG_KILLING, sizeof(MSG_KILLING)-1);
 
