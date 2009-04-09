@@ -62,8 +62,9 @@
      "couldn't pivot_root('" LRTMPPATH "', '" LRTMPPATH "/old')"
 #define MSG_UNMOUNTED ": unmounted\n"
 #define MSG_NOT_UNMOUNTED ": NOT unmounted\n"
-#define MSG_KILLING "Killing everything...\n"
-#define MSG_UNMOUNTING "Unmounting everything...\n"
+#define MSG_KILLING "Killing everything..."
+#define MSG_UNMOUNTING "Unmounting everything..."
+#define MSG_DONE " done\n"
 
 static int out = 2;
 
@@ -253,6 +254,8 @@ static int unmount_everything()
         sys_close(fd);
     }
 
+    sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
+
     if (positives) {
         sys_sync();
         return unmount_everything();
@@ -270,6 +273,8 @@ static void kill_everything()
     for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill 1 (and us) */
         if (pid != mypid) sys_kill(pid, 9 /* SIGKILL */);
     }
+
+    sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
 }
 
 static void close_all_loops()
