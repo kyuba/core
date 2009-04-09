@@ -65,9 +65,6 @@
 (((c) == ' ')  || ((c) == '\t') || ((c) == '\v') ||\
  ((c) == '\n') || ((c) == '\r'))
 
-#undef sys_kill
-#define sys_kill(a,b) 1
-
 static void trim (char *s)
 {
     long l = 0;
