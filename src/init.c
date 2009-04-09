@@ -148,7 +148,8 @@ int cmain ()
 
     on_init_death((void *)0, (void *)0);
 
-    multiplex_add_signal(sig_int, on_sig_int, (void *)0);
+    multiplex_add_sexpr  (stdio, (void *)0, (void *)0);
+    multiplex_add_signal (sig_int, on_sig_int, (void *)0);
 
     while (multiplex() == mx_ok);
 
