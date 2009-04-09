@@ -64,6 +64,7 @@
 #define MSG_NOT_UNMOUNTED ": NOT unmounted\n"
 #define MSG_KILLING "Killing everything..."
 #define MSG_UNMOUNTING "Unmounting everything..."
+#define MSG_CLOSING_LOOPS "Disassociating loop filesystems..."
 #define MSG_DONE " done\n"
 
 static int out = 2;
@@ -281,18 +282,22 @@ static void close_all_loops()
 {
     char tmppath[] = REAL_LOOP;
 
+    sys_write (out, MSG_CLOSING_LOOPS, sizeof(MSG_CLOSING_LOOPS)-1);
+
     for (unsigned char i = 0; i < 9; i++)
     {
         int loopfd;
         tmppath[(sizeof(LRTMP_LOOP)-2)] = ('0' + (i));
 
-        if ((loopfd = sys_open(tmppath, 2 /* O_RDWR */, 0)) >= 0)
+        if ((loopfd = sys_open(tmppath, 0 /* O_RDONLY */, 0)) >= 0)
         {
             sys_ioctl(loopfd, 0x4C01 /* LOOP_CLR_FD */, 0);
 
             sys_close(loopfd);
         }
     }
+
+    sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
 }
 
 static void prune_file_descriptors()
