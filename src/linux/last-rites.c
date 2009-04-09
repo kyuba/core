@@ -287,7 +287,7 @@ static void close_all_loops()
     for (unsigned char i = 0; i < 9; i++)
     {
         int loopfd;
-        tmppath[(sizeof(LRTMP_LOOP)-2)] = ('0' + (i));
+        tmppath[(sizeof(REAL_LOOP)-2)] = ('0' + (i));
 
         if ((loopfd = sys_open(tmppath, 0 /* O_RDONLY */, 0)) >= 0)
         {
