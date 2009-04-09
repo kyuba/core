@@ -30,7 +30,7 @@
   (description "Kyuba minimal init programme")
   (version "1")
 
-  (libraries "kyuba" "syscall")
+  (libraries "syscall")
 
   (code "init" "init-system")
 
