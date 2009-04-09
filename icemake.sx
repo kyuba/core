@@ -73,3 +73,14 @@
   (documentation
         "power"))
 
+(programme "last-rites" libcurie
+  (name "last-rites")
+  (description "Kyuba last-rites programme")
+  (version "1")
+
+  (libraries "syscall")
+
+  (code "last-rites")
+
+  (documentation
+        "last-rites"))

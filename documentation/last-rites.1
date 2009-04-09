@@ -1,0 +1,52 @@
+.TH LAST-RITES 1 "APRIL 2009" Kyuba "Kyuba Users Manual"
+
+.SH NAME
+last-rites \- make damn sure that everything is properly unmounted
+
+.SH SYNOPSIS
+
+.BI "last-rites k|r|d"
+
+.SH DESCRIPTION
+The
+.B last-rites
+programme's purpose is to make damn sure that everything is unmounted, killing
+all processes but PID 1 and closing all loop filesystems in the process. It does
+so a few times (5 times by default). in between the killing/unmount attempts,
+.BR sync (2)
+is called a few times as well to make sure everything is written to disk.
+
+The chances of success for this programme are upped a wee bit by first mounting
+a tmpfs over /bin, then making a minimal filesystem there and using
+.BR pivot_root (2)
+to get into that minimal filesystem. That way, no processes should remain that
+have their working directory on the root filesystem, including kernel threads.
+This in turn means that the programme
+.I should even be able to unmount the root filesystem properly
+, instead of only remounting it read-only like all the other
+systems seem to do.
+
+.SH OPTIONS
+.IP "d"
+Turn the computer off after performing the last rites.
+
+.IP "r"
+Tell the computer to re-boot after performing the last rites.
+
+.IP "k"
+Tell the computer to run kexec() after performing the last rites.
+
+.SH BUGS
+The last-rites programme has only been implemented on Linux, other operating
+systems will only get a stub programme that does nothing and returns an exit
+status of 0.
+
+.SH AUTHOR
+Magnus Deininger <magnus.deininger@student.uni-tuebingen.de>
+
+.SH SEE ALSO
+.BR init (1),
+.BR ipc-hub (1),
+.BR kyu (1),
+.BR monitor (1),
+.BR power (1)
