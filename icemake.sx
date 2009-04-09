@@ -20,7 +20,10 @@
 
   (code "monitor")
 
-  (data "kyu" "init.sx"))
+  (data "kyu" "init.sx")
+
+  (documentation
+        "monitor"))
 
 (programme "init" libcurie
   (name "init")
@@ -29,16 +32,10 @@
 
   (libraries "kyuba" "syscall")
 
-  (code "init" "init-system"))
+  (code "init" "init-system")
 
-(programme "initramfs-init" libcurie
-  (name "initramfs-init")
-  (description "Kyuba initramfs init programme")
-  (version "1")
-
-  (libraries "kyuba")
-
-  (code "initramfs-init"))
+  (documentation
+        "init"))
 
 (programme "ipc-hub" libcurie
   (name "ipc-hub")
@@ -47,7 +44,10 @@
 
   (libraries "duat" "kyuba" "syscall")
 
-  (code "ipc-hub"))
+  (code "ipc-hub")
+
+  (documentation
+        "ipc-hub"))
 
 (programme "kyu" libcurie
   (name "ipc-client")
@@ -56,7 +56,10 @@
 
   (libraries "duat" "kyuba")
 
-  (code "ipc-client"))
+  (code "ipc-client")
+
+  (documentation
+        "kyu"))
 
 (programme "power" libcurie
   (name "power")
@@ -65,4 +68,8 @@
 
   (libraries "syscall")
 
-  (code "power"))
+  (code "power")
+
+  (documentation
+        "power"))
+

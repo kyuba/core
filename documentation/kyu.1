@@ -1,0 +1,40 @@
+.TH KYU 1 "APRIL 2009" Kyuba "Kyuba Users Manual"
+
+.SH NAME
+kyu \- talk to kyuba
+
+.SH SYNOPSIS
+
+.BI "kyu -H|-D"
+
+.BI "kyu -R"
+
+.BI "kyu -i"
+
+.SH DESCRIPTION
+The
+.B kyu
+programme establishes a connection to an IPC hub, as described in
+.BR ipc-hub (1),
+and once the connection is established it will either tell kyuba to shut down,
+or it will provide interactive access to kyuba on stdio.
+
+.SH OPTIONS
+.IP "-D, -H"
+Tell kyuba to turn the computer off, effectively launching the shutdown sequence
+and afterwards possibly shutting down.
+
+.IP "-R"
+Tell kyuba to re-boot the computer, effectively launching the shutdown sequence
+and afterwards possibly re-booting.
+
+.IP "-i"
+Open an interactive session on stdio that allows sending arbitrary commands over
+the wire. This is handy for debugging, or for connection kyuba programmes to the
+monitor without requiring the monitor to have started them.
+
+.SH AUTHOR
+Magnus Deininger <magnus.deininger@student.uni-tuebingen.de>
+
+.SH SEE ALSO
+.BR init (1)

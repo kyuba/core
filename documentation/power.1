@@ -1,0 +1,34 @@
+.TH POWER 1 "APRIL 2009" Kyuba "Kyuba Users Manual"
+
+.SH NAME
+power \- manipulate computer power status
+
+.SH SYNOPSIS
+
+.BI "power down|reset"
+
+.SH DESCRIPTION
+The
+.B power
+programme is used to turn the computer off, or have it re-boot. Note that this
+is very unlike the power programme in eINIT: this will perform that action
+the instant the command is run. That is, it won't tell the init to perform
+the reboot or shut down, it will actually re-boot or turn off the power supply.
+
+.SH OPTIONS
+.IP "down"
+Turn the computer off.
+
+.IP "reset"
+Tell the computer to re-boot.
+
+.SH BUGS
+The power programme has only been implemented on Linux, other operating systems
+will only get a stub programme that does nothing and returns an exit status of
+0.
+
+.SH AUTHOR
+Magnus Deininger <magnus.deininger@student.uni-tuebingen.de>
+
+.SH SEE ALSO
+.BR init (1)

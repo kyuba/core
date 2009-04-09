@@ -1,0 +1,37 @@
+.TH INIT 1 "APRIL 2009" Kyuba "Kyuba Users Manual"
+
+.SH NAME
+init \- the not-so-magical process with PID 1
+
+.SH SYNOPSIS
+
+.BI "init"
+
+.SH DESCRIPTION
+The
+.B init
+process runs as the process with the process ID 1. It serves two special
+purposes: getting the system on-line, or delegating that problem to some other
+programme, and reaping dead child processes that get attached to it.
+
+Kyuba's init will try to find a
+.BR monitor (1)
+binary in the path and launch it, passing it "/etc/kyu/init.sx" as the
+configuration file to use.
+
+.SH SIGNALS
+.IP SIGINT
+On at least Linux, the init process is notified of a user pressing the
+CTRL+ALT+DEL sequence on a physical console by means of a SIGINT to the init
+process. Kyuba's init understands this and will print "(ctrl-alt-del)" to the
+monitor programe whenever this happens.
+
+.SH ENVIRONMENT
+.IP "PATH"
+The path variable is used to find the monitor binary to launch.
+
+.SH AUTHOR
+Magnus Deininger <magnus.deininger@student.uni-tuebingen.de>
+
+.SH SEE ALSO
+.BR monitor (1)

@@ -1,0 +1,32 @@
+.TH MONITOR 1 "APRIL 2009" Kyuba "Kyuba Users Manual"
+
+.SH NAME
+monitor \- launch subprocesses and possibly keep respawning them
+
+.SH SYNOPSIS
+
+.BI "monitor " configuration-file
+
+.SH DESCRIPTION
+The
+.B monitor
+programme is used to launch actual, real programmes and daemons. The scope of
+this particular monitor is about the same as that of the default sysvinit init
+programme, sans the runlevels, which were deemed unnecessary.
+
+.SH FILES
+.IP "/etc/kyu/init.sx"
+This is the default configuration file, more or less.
+.BR init (1)
+will try to make the monitor run this file.
+
+.SH ENVIRONMENT
+.IP "PATH"
+The path variable is used to find binaries to launch that were specified
+relatively instead of absolutely.
+
+.SH AUTHOR
+Magnus Deininger <magnus.deininger@student.uni-tuebingen.de>
+
+.SH SEE ALSO
+.BR init (1)

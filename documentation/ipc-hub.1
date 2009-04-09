@@ -1,0 +1,30 @@
+.TH IPC-HUB 1 "APRIL 2009" Kyuba "Kyuba Users Manual"
+
+.SH NAME
+ipc-hub \- distribute commands from and to other kyuba processes
+
+.SH SYNOPSIS
+
+.BI "ipc-hub [" socket "]"
+
+.SH DESCRIPTION
+The
+.B ipc-hub
+programme programme creates a socket file and serves a 9p filesytem through it
+that other programmes may connect to. The hub will simply serve all incoming
+data from stdin to the virtual kyu/raw file on the socket for all readers to get
+and will print all the data coming in to this special file to stdout.
+
+Note that the ipc-hub does its work by parsing all incoming data as
+s-expressions and then printing it by re-encoding it again.
+
+.SH FILES
+.IP "/dev/kyu-ipc-9p"
+The default socket file that will be used, unless an argument is specified.
+
+.SH AUTHOR
+Magnus Deininger <magnus.deininger@student.uni-tuebingen.de>
+
+.SH SEE ALSO
+.BR init (1),
+.BR monitor (1)
