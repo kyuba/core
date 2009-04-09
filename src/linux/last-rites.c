@@ -250,6 +250,7 @@ static int unmount_everything()
     }
 
     if (positives) {
+        sys_sync();
         return unmount_everything();
     }
 
