@@ -33,6 +33,8 @@
 #include <curie/signal.h>
 #include <curie/shell.h>
 
+#include <syscall/syscall.h>
+
 #include <kyuba/script.h>
 
 #define PATH "PATH=/bin:/sbin"
@@ -126,7 +128,7 @@ int cmain ()
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
-    stdio = sx_open_io (io_open (-1), io_open (1));
+    stdio = sx_open_stdio();
 
     mbinary = which (str_monitor);
 
@@ -150,6 +152,10 @@ int cmain ()
 
     multiplex_add_sexpr  (stdio, (void *)0, (void *)0);
     multiplex_add_signal (sig_int, on_sig_int, (void *)0);
+
+#ifdef have_sys_close
+    sys_close (0);
+#endif
 
     while (multiplex() == mx_ok);
 
