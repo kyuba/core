@@ -126,7 +126,7 @@ int cmain ()
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
-    stdio = sx_open_stdio();
+    stdio = sx_open_io (io_open (-1), io_open (1));
 
     mbinary = which (str_monitor);
 
