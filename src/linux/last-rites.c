@@ -47,8 +47,8 @@
 #define MSG_INTRO " >> Project Kyuba | last rites <<\n"\
      "####################################################################"\
      "###########\n"
-#define MSG_PRUNE "pruning all file descriptors...\n"
-#define MSG_REOPEN "stdio reopened\n"
+#define MSG_PRUNE "pruning file descriptors..."
+#define MSG_REOPEN " [ ok ]\n"
 #define MSG_NO_KEXEC "no support for kexec?\n"
 #define MSG_KEXEC_FAILED "whoops, looks like the kexec failed!\n"
 #define MSG_CANT_SHUT_DOWN "can't shut down?\n"
@@ -61,10 +61,11 @@
      "couldn't pivot_root('" LRTMPPATH "', '" LRTMPPATH "/old')"
 #define MSG_UNMOUNTED " [ ok ]\n"
 #define MSG_NOT_UNMOUNTED " [ .. ]\n"
+#define MSG_READONLY " [ ro ]"
 #define MSG_KILLING "Killing everything..."
 #define MSG_UNMOUNTING "Unmounting everything...\n"
 #define MSG_CLOSING_LOOPS "Disassociating loop filesystems..."
-#define MSG_DONE " done\n"
+#define MSG_DONE " [ ok ]\n"
 
 static int out = 2;
 
@@ -226,9 +227,15 @@ static int unmount_everything()
 
                                 if (fs_vfstype) {
                                     /* try to remount read-only */
-                                    sys_mount (fs_spec, fs_file, fs_vfstype,
-                                               0x21 /* MS_REMOUNT|MS_RDONLY */,
-                                               "");
+                                    if (!sys_mount (fs_spec, fs_file,
+                                                    fs_vfstype,
+                                                    0x21
+                                                    /* MS_REMOUNT|MS_RDONLY */,
+                                                    ""))
+                                    {
+                                        sys_write (out, MSG_READONLY,
+                                                   sizeof(MSG_READONLY)-1);
+                                    }
                                 }
                                 /* ... else there's been some bad data trying to
                                    parse /proc/mounts */
@@ -253,8 +260,6 @@ static int unmount_everything()
 
         sys_close(fd);
     }
-
-    sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
 
     if (positives) {
         sys_sync();
