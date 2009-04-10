@@ -39,7 +39,6 @@
 #define REAL_LOOP "/dev/loop/x"
 
 #define MAX_RETRIES 5
-#define MAX_PID (4096*16 + 1)
 
 #define BUFFERSIZE 0x2000 /* 8kb */
 /* seems unlikely that your /proc/mounts is gonna be bigger, and if it is, it's
@@ -277,15 +276,9 @@ static int unmount_everything()
 
 static void kill_everything()
 {
-    int mypid = sys_getpid();
-
-    if (mypid < 0) return; /* don't know our own PID, something's fishy */
-
     sys_write (out, MSG_KILLING, sizeof(MSG_KILLING)-1);
 
-    for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill PID 1 (or us) */
-        if (pid != mypid) sys_kill(pid, 9 /* SIGKILL */);
-    }
+    sys_kill (-1, 9 /* SIGKILL */);
 
     sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
 }
