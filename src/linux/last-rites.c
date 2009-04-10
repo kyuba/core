@@ -30,6 +30,9 @@
 #include <syscall/syscall.h>
 #include <linux/reboot.h>
 
+#define __ASSEMBLY__
+#include <asm/signal.h> /* for SIG_BLOCK */
+
 // let's be serious, /bin is gonna exist
 #define LRTMPPATH "/bin"
 
@@ -383,9 +386,24 @@ static void lastrites()
     } while (unmount_everything() && max_retries);
 }
 
+static void ignore_signals()
+{
+    unsigned long long mask = (long)~0;
+    /* the kernel is using 64-bit integers for this. in c99, unsigned long longs
+       are required to be at least 64-bit last i checked. */
+
+#if defined(have_sys_sigprocmask)
+    sys_sigprocmask (SIG_BLOCK, &mask, (void *)0);
+#else
+    sys_rt_sigprocmask (SIG_BLOCK, &mask, (void *)0, 8 /* 64 bit */);
+#endif
+}
+
 int cmain ()
 {
     char action = curie_argv[1] ? curie_argv[1][0] : '?';
+
+    ignore_signals();
 
     sys_write (out, MSG_INTRO, sizeof(MSG_INTRO) -1);
 
