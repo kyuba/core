@@ -97,11 +97,6 @@ static void on_init_death (struct exec_context *ctx, void *u)
     {
         case 0:
         case -1:
-            {
-                struct io *io = io_open (2);
-                io->type = iot_read;
-                multiplex_add_io (io, do_nothing, do_nothing, (void *)0);
-            }
             break; /* this is bad, but it should only happen during a
                       last-rites call, or when the monitor dies during a very
                       bad moment while updating kyuba. */
@@ -138,6 +133,10 @@ int cmain ()
     on_init_death((void *)0, (void *)0);
 
     multiplex_add_signal (sig_int, on_sig_int, (void *)0);
+
+    struct io *io = io_open (2);
+    io->type = iot_read;
+    multiplex_add_io (io, do_nothing, do_nothing, (void *)0);
 
 #ifdef have_sys_close
     sys_close (0);

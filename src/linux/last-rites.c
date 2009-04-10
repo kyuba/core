@@ -234,7 +234,7 @@ static int unmount_everything()
                                 /* file failed to unmount */
                                 errors++;
 
-                                if (fs_spec && fs_file && fs_vfstype) {
+                                if (fs_vfstype) {
                                     /* try to remount read-only */
                                     sys_mount (fs_spec, fs_file, fs_vfstype,
                                                0x21 /* MS_REMOUNT|MS_RDONLY */,
