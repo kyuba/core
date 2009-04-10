@@ -49,9 +49,7 @@ static void *gm_recover(unsigned long int s)
     return (void *)0;
 }
 
-static const char **commandline;
 static struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
-static sexpr mbinary = sx_false;
 
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
 {
@@ -78,6 +76,8 @@ enum signal_callback_result on_sig_int (enum signal signal, void *u)
 
 static void on_init_death (struct exec_context *ctx, void *u)
 {
+    const char **commandline = (const char **)u;
+
     struct exec_context *context;
     if (ctx != (struct exec_context *)0)
     {
@@ -99,7 +99,7 @@ static void on_init_death (struct exec_context *ctx, void *u)
             monitorconnection = sx_open_io (context->in, context->out);
 
             multiplex_add_sexpr (monitorconnection, on_conn_read, (void *)0);
-            multiplex_add_process(context, on_init_death, (void *)0);
+            multiplex_add_process(context, on_init_death, u);
             break;
     }
 }
@@ -108,6 +108,8 @@ int cmain ()
 {
     static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
     define_string (str_monitor, "monitor");
+
+    sexpr mbinary = sx_false;
 
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
@@ -119,13 +121,12 @@ int cmain ()
     }
 
     cmd[0] = sx_string (mbinary);
-    commandline = cmd;
 
     multiplex_signal();
     multiplex_all_processes();
     multiplex_sexpr();
 
-    on_init_death((void *)0, (void *)0);
+    on_init_death((void *)0, cmd);
 
     multiplex_add_signal (sig_int, on_sig_int, (void *)0);
 
