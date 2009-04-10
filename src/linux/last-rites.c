@@ -350,10 +350,10 @@ static void lastrites()
 
     int ldev = (5 << 8) | 1;
     sys_mknod(LRTMPPATH "/dev/console", 0x2000 /* S_IFCHR */, ldev);
-//    ldev = (4 << 8) | 1;
-//    sys_mknod(LRTMPPATH "/dev/tty1", 0x2000 /* S_IFCHR */, ldev);
-//    ldev = (1 << 8) | 3;
-//    sys_mknod(LRTMPPATH "/dev/null", 0x2000 /* S_IFCHR */, ldev);
+    ldev = (4 << 8) | 1;
+    sys_mknod(LRTMPPATH "/dev/tty1", 0x2000 /* S_IFCHR */, ldev);
+    ldev = (1 << 8) | 3;
+    sys_mknod(LRTMPPATH "/dev/null", 0x2000 /* S_IFCHR */, ldev);
 
     if (sys_mount("lastrites-proc", LRTMPPATH "/proc", "proc", 0, ""))
     {
