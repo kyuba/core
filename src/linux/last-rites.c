@@ -59,10 +59,10 @@
 #define MSG_MOUNT_TMPFS_FAILED "couldn't mount my tmpfs at " LRTMPPATH
 #define MSG_PIVOT_ROOT_FAILED\
      "couldn't pivot_root('" LRTMPPATH "', '" LRTMPPATH "/old')"
-#define MSG_UNMOUNTED ": unmounted\n"
-#define MSG_NOT_UNMOUNTED ": NOT unmounted\n"
+#define MSG_UNMOUNTED " [ ok ]\n"
+#define MSG_NOT_UNMOUNTED " [ .. ]\n"
 #define MSG_KILLING "Killing everything..."
-#define MSG_UNMOUNTING "Unmounting everything..."
+#define MSG_UNMOUNTING "Unmounting everything...\n"
 #define MSG_CLOSING_LOOPS "Disassociating loop filesystems..."
 #define MSG_DONE " done\n"
 
@@ -212,16 +212,6 @@ static int unmount_everything()
 
                             for (ixl = 0; fs_spec[ixl]; ixl++);
                             sys_write (out, fs_spec, ixl);
-
-                            sys_write (out, ":", 1);
-
-                            for (ixl = 0; fs_file[ixl]; ixl++);
-                            sys_write (out, fs_file, ixl);
-
-                            sys_write (out, ":", 1);
-
-                            for (ixl = 0; fs_vfstype[ixl]; ixl++);
-                            sys_write (out, fs_vfstype, ixl);
 
                             if (
 #if defined(have_sys_umount)
