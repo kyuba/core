@@ -32,6 +32,7 @@
 #include <curie/multiplex.h>
 #include <curie/signal.h>
 #include <curie/shell.h>
+#include <curie/network.h>
 
 #include <syscall/syscall.h>
 
@@ -104,6 +105,21 @@ static void on_init_death (struct exec_context *ctx, void *u)
     }
 }
 
+static void do_nothing (struct io *i, void *aux)
+{
+    /* really, we don't do anything here */
+}
+
+static void prevent_hissyfits ()
+{
+    struct io *in, *out;
+
+    net_open_loop (&in, &out);
+
+    multiplex_add_io (in,  do_nothing, do_nothing, (void *)0);
+    multiplex_add_io (out, (void*)0, do_nothing, (void *)0);
+}
+
 int cmain ()
 {
     static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
@@ -134,6 +150,8 @@ int cmain ()
     sys_close (0);
     sys_close (1);
 #endif
+
+    prevent_hissyfits ();
 
     while (1) multiplex(); /* make sure to not get outta this loop, ever */
 
