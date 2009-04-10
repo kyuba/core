@@ -232,7 +232,7 @@ static int unmount_everything()
                                                     fs_vfstype,
                                                     0x21
                                                     /* MS_REMOUNT|MS_RDONLY */,
-                                                    ""))
+                                                    (void *)0))
                                     {
                                         sys_write (out, MSG_READONLY,
                                                    sizeof(MSG_READONLY)-1);
