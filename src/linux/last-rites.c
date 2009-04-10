@@ -211,8 +211,18 @@ static int unmount_everything()
                             int ixl;
                             /* still mounted */
 
+                            for (ixl = 0; fs_spec[ixl]; ixl++);
+                            sys_write (out, fs_spec, ixl);
+
+                            sys_write (out, ":", 1);
+
                             for (ixl = 0; fs_file[ixl]; ixl++);
                             sys_write (out, fs_file, ixl);
+
+                            sys_write (out, ":", 1);
+
+                            for (ixl = 0; fs_vfstype[ixl]; ixl++);
+                            sys_write (out, fs_vfstype, ixl);
 
                             if (
 #if defined(have_sys_umount)
@@ -327,10 +337,9 @@ static void create_loops ()
     char tmppath[] = LRTMP_LOOP;
 
     for (unsigned char i = 0; i < 9; i++) {
-        int ldev = (((7) << 8) | (i));
         tmppath[(sizeof(LRTMP_LOOP)-2)] = ('0' + (i));
 
-        sys_mknod (tmppath, 0x6000 /* S_IFBLK */, ldev);
+        sys_mknod (tmppath, 0x6000 /* S_IFBLK */, (((7) << 8) | (i)));
     }
 }
 
@@ -348,12 +357,7 @@ static void lastrites()
 
     create_loops ();
 
-    int ldev = (5 << 8) | 1;
-    sys_mknod(LRTMPPATH "/dev/console", 0x2000 /* S_IFCHR */, ldev);
-    ldev = (4 << 8) | 1;
-    sys_mknod(LRTMPPATH "/dev/tty1", 0x2000 /* S_IFCHR */, ldev);
-    ldev = (1 << 8) | 3;
-    sys_mknod(LRTMPPATH "/dev/null", 0x2000 /* S_IFCHR */, ldev);
+    sys_mknod (LRTMPPATH "/dev/console", 0x2000 /* S_IFCHR */, ((5 << 8) | 1));
 
     if (sys_mount("lastrites-proc", LRTMPPATH "/proc", "proc", 0, ""))
     {
