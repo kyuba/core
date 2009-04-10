@@ -61,6 +61,11 @@ static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
     sx_destroy (sx);
 }
 
+static void do_nothing (struct io *i, void *aux)
+{
+    /* do as the function name says */
+}
+
 enum signal_callback_result on_sig_int (enum signal signal, void *u)
 {
     static sexpr msg = (sexpr)0;
@@ -94,6 +99,11 @@ static void on_init_death (struct exec_context *ctx, void *u)
     {
         case 0:
         case -1:
+            {
+                struct io *io = io_open (2);
+                io->type = iot_read;
+                multiplex_add_io (io, do_nothing, do_nothing, (void *)0);
+            }
             break; /* this is bad, but it should only happen during a
                       last-rites call, or when the monitor dies during a very
                       bad moment while updating kyuba. */
