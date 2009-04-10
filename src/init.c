@@ -33,8 +33,6 @@
 #include <curie/signal.h>
 #include <curie/shell.h>
 
-#include <syscall/syscall.h>
-
 #include <kyuba/script.h>
 
 #define PATH "PATH=/bin:/sbin"
@@ -51,15 +49,13 @@ static void *gm_recover(unsigned long int s)
     return (void *)0;
 }
 
-struct sexpr_io *stdio = (struct sexpr_io *)0;
-
 static const char **commandline;
 static struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
 static sexpr mbinary = sx_false;
 
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
 {
-    sx_write (stdio, sx);
+    /* could be doing something, right here... */
     sx_destroy (sx);
 }
 
@@ -111,9 +107,7 @@ static void on_init_death (struct exec_context *ctx, void *u)
 int cmain ()
 {
     static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
-    define_string (str_monitor,    "monitor");
-    define_symbol (sym_no_monitor, "no-monitor");
-    define_symbol (sym_init,       "init");
+    define_string (str_monitor, "monitor");
 
     for (int i = 0; curie_environment[i] != (char *)0; i++)
     {
@@ -128,18 +122,11 @@ int cmain ()
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
-    stdio = sx_open_stdio();
-
     mbinary = which (str_monitor);
 
     if (falsep(mbinary)) {
-        sx_write (stdio, cons (sym_error, sym_no_monitor));
         return 1;
     }
-
-    sexpr t = cons (sym_init, sx_end_of_list);
-    sx_write (stdio, t);
-    sx_destroy (t);
 
     cmd[0] = sx_string (mbinary);
     commandline = cmd;
@@ -150,7 +137,6 @@ int cmain ()
 
     on_init_death((void *)0, (void *)0);
 
-    multiplex_add_sexpr  (stdio, (void *)0, (void *)0);
     multiplex_add_signal (sig_int, on_sig_int, (void *)0);
 
 #ifdef have_sys_close
