@@ -30,9 +30,6 @@
 #include <syscall/syscall.h>
 #include <linux/reboot.h>
 
-#define __ASSEMBLY__
-#include <asm/signal.h> /* for SIG_BLOCK */
-
 // let's be serious, /bin is gonna exist
 #define LRTMPPATH "/bin"
 
@@ -392,10 +389,17 @@ static void ignore_signals()
     /* the kernel is using 64-bit integers for this. in c99, unsigned long longs
        are required to be at least 64-bit last i checked. */
 
+    /* seems like getting to SIG_BLOCK isn't quite that easy, but upon examining
+       the kernel headers, i noticed that SIGBLOCK is always either 0 or 1, and
+       SIG_UNBLOCK is always either 1 or 2, so calling sigprocmask with 1 first
+       and then 0 will either unblock everything and then block everything, or
+       block everything and then get rejected as invalid. it's a bitch. */
 #if defined(have_sys_sigprocmask)
-    sys_sigprocmask (SIG_BLOCK, &mask, (void *)0);
+    sys_sigprocmask (1, &mask, (void *)0);
+    sys_sigprocmask (0, &mask, (void *)0);
 #else
-    sys_rt_sigprocmask (SIG_BLOCK, &mask, (void *)0, 8 /* 64 bit */);
+    sys_rt_sigprocmask (1, &mask, (void *)0, 8 /* 64 bit */);
+    sys_rt_sigprocmask (0, &mask, (void *)0, 8 /* 64 bit */);
 #endif
 }
 
