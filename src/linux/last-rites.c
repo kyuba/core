@@ -279,10 +279,11 @@ static void kill_everything()
 {
     int mypid = sys_getpid();
 
+    if (mypid < 0) return; /* don't know our own PID, something's fishy */
+
     sys_write (out, MSG_KILLING, sizeof(MSG_KILLING)-1);
 
-    for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill 1 (and us) */
-        if ((pid % 1000) == 0) sys_write (out, ".", 1);
+    for (int pid = 2; pid < MAX_PID; pid++) { /* don't kill PID 1 (or us) */
         if (pid != mypid) sys_kill(pid, 9 /* SIGKILL */);
     }
 

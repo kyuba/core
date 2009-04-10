@@ -33,6 +33,8 @@
 #include <curie/signal.h>
 #include <curie/shell.h>
 
+#include <syscall/syscall.h>
+
 #include <kyuba/script.h>
 
 #define PATH "PATH=/bin:/sbin"
@@ -141,6 +143,7 @@ int cmain ()
 
 #ifdef have_sys_close
     sys_close (0);
+    sys_close (1);
 #endif
 
     while (1) multiplex(); /* make sure to not get outta this loop, ever */
