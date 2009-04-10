@@ -38,7 +38,8 @@
 #define LRTMP_LOOP LRTMPPATH "/dev/loop/x"
 #define REAL_LOOP "/dev/loop/x"
 
-#define MAX_RETRIES 5
+#define MAX_RETRIES 10
+#define MAX_PID ((0x1000 * 8)+1)
 
 #define BUFFERSIZE 0x2000 /* 8kb */
 /* seems unlikely that your /proc/mounts is gonna be bigger, and if it is, it's
@@ -271,9 +272,14 @@ static int unmount_everything()
 
 static void kill_everything()
 {
+    int mypid = sys_getpid();
+
     sys_write (out, MSG_KILLING, sizeof(MSG_KILLING)-1);
 
-    sys_kill (-1, 9 /* SIGKILL */);
+    for (int i = 2; i < MAX_PID; i++)
+    {
+        sys_kill (i, 9 /* SIGKILL */);
+    }
 
     sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
 }
