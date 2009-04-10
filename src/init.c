@@ -59,11 +59,6 @@ static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
     sx_destroy (sx);
 }
 
-static void do_nothing (struct io *i, void *aux)
-{
-    /* do as the function name says */
-}
-
 enum signal_callback_result on_sig_int (enum signal signal, void *u)
 {
     static sexpr msg = (sexpr)0;
