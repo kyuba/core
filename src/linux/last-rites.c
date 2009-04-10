@@ -278,7 +278,7 @@ static void kill_everything()
 
     for (int i = 2; i < MAX_PID; i++)
     {
-        sys_kill (i, 9 /* SIGKILL */);
+        if (i != mypid) sys_kill (i, 9 /* SIGKILL */);
     }
 
     sys_write (out, MSG_DONE, sizeof(MSG_DONE)-1);
