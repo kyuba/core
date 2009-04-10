@@ -134,10 +134,6 @@ int cmain ()
 
     multiplex_add_signal (sig_int, on_sig_int, (void *)0);
 
-    struct io *io = io_open (2);
-    io->type = iot_read;
-    multiplex_add_io (io, do_nothing, do_nothing, (void *)0);
-
 #ifdef have_sys_close
     sys_close (0);
     sys_close (1);
