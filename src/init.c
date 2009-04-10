@@ -143,7 +143,7 @@ int cmain ()
     sys_close (0);
 #endif
 
-    while (multiplex() == mx_ok);
+    while (1) multiplex(); /* make sure to not get outta this loop, ever */
 
-    return cmain (); /* this should never be reached... */
+    return 0; /* this should never be reached... */
 }
