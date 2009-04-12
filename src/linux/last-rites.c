@@ -215,6 +215,7 @@ static int unmount_everything()
                             (fs_file[3] == 'd'))
                         {
                             int ixl;
+                            long rt;
                             /* still mounted */
 
                             for (ixl = 0; fs_spec[ixl]; ixl++);
@@ -226,21 +227,33 @@ static int unmount_everything()
 #else
                                 sys_umount2(fs_file, 0) &&
 #endif
-                                sys_umount2(fs_file, 1 /* MNT_FORCE */))
+                                (rt = sys_umount2(fs_file, 1 /* MNT_FORCE */)))
                             {
+                                char sx[] = " [ .. ]";
                                 /* file failed to unmount */
                                 errors++;
 
+                                sx[4] = ('0' + (rt % 10));
+                                rt /= 10;
+                                sx[3] = ('0' + (rt % 10));
+
+                                sys_write (out, sx, 7);
+
                                 if (fs_vfstype) {
                                     /* try to remount read-only */
-                                    if (!sys_mount (fs_spec, fs_file,
-                                                    fs_vfstype,
-                                                    0x21
-                                                    /* MS_REMOUNT|MS_RDONLY */,
-                                                    (void *)0))
+                                    if (!(rt = sys_mount
+                                              (fs_spec, fs_file, fs_vfstype,
+                                               0x21 /* MS_REMOUNT|MS_RDONLY */,
+                                               (void *)0)))
                                     {
                                         sys_write (out, MSG_READONLY,
                                                    sizeof(MSG_READONLY)-1);
+                                    }
+                                    else
+                                    {
+                                        sx[4] = ('0' + (rt % 10));
+                                        rt /= 10;
+                                        sx[3] = ('0' + (rt % 10));
                                     }
                                 }
                                 /* ... else there's been some bad data trying to
