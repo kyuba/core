@@ -112,9 +112,7 @@ static void trim (char *s)
 
 static void sleep(int n)
 {
-    long s[2] = { n, 0 };
-
-    sys_select (0, (void*)0, (void*)0, (void*)0, s);
+    sys_poll ((void *)0, 0, n * 1000);
 }
 
 static int unmount_everything()
