@@ -112,9 +112,9 @@ static void trim (char *s)
 
 static void sleep(int n)
 {
-    sys_alarm (n);
-    sys_pause ();
-/*    long long s[2] = { n, 0 };*/
+    long long s[2] = { n, 0 };
+
+    sys_select (0, (void*)0, (void*)0, (void*)0, s);
 }
 
 static int unmount_everything()
