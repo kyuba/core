@@ -233,6 +233,7 @@ static int unmount_everything()
                                 /* file failed to unmount */
                                 errors++;
 
+                                if (rt < 0) rt *= -1;
                                 sx[4] = ('0' + (rt % 10));
                                 rt /= 10;
                                 sx[3] = ('0' + (rt % 10));
@@ -246,6 +247,7 @@ static int unmount_everything()
                                               0x21 /* MS_REMOUNT|MS_RDONLY */,
                                               (void *)0)))
                                     {
+                                        if (rt < 0) rt *= -1;
                                         sx[4] = ('0' + (rt % 10));
                                         rt /= 10;
                                         sx[3] = ('0' + (rt % 10));
