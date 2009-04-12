@@ -241,19 +241,20 @@ static int unmount_everything()
 
                                 if (fs_vfstype) {
                                     /* try to remount read-only */
-                                    if (!(rt = sys_mount
-                                              (fs_spec, fs_file, fs_vfstype,
-                                               0x21 /* MS_REMOUNT|MS_RDONLY */,
-                                               (void *)0)))
-                                    {
-                                        sys_write (out, MSG_READONLY,
-                                                   sizeof(MSG_READONLY)-1);
-                                    }
-                                    else
+                                    if ((rt = sys_mount
+                                             (fs_spec, fs_file, fs_vfstype,
+                                              0x21 /* MS_REMOUNT|MS_RDONLY */,
+                                              (void *)0)))
                                     {
                                         sx[4] = ('0' + (rt % 10));
                                         rt /= 10;
                                         sx[3] = ('0' + (rt % 10));
+                                        sys_write (out, sx, 7);
+                                    }
+                                    else
+                                    {
+                                        sys_write (out, MSG_READONLY,
+                                                   sizeof(MSG_READONLY)-1);
                                     }
                                 }
                                 /* ... else there's been some bad data trying to
