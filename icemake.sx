@@ -16,7 +16,7 @@
   (description "Kyuba generic monitor programme")
   (version "1")
 
-  (libraries "kyuba")
+  (libraries "kyuba" "syscall")
 
   (code "monitor")
 

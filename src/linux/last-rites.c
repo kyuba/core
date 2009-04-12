@@ -38,7 +38,7 @@
 #define LRTMP_LOOP LRTMPPATH "/dev/loop/x"
 #define REAL_LOOP "/dev/loop/x"
 
-#define MAX_RETRIES 10
+#define MAX_RETRIES 5
 #define MAX_PID ((0x1000 * 8)+1)
 
 #define BUFFERSIZE 0x2000 /* 8kb */
@@ -413,6 +413,10 @@ static void ignore_signals()
 int cmain ()
 {
     char action = curie_argv[1] ? curie_argv[1][0] : '?';
+
+#if defined(have_sys_setsid)
+    sys_setsid();
+#endif
 
     ignore_signals();
 

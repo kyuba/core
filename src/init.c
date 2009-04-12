@@ -130,6 +130,10 @@ int cmain ()
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
 
+#if defined(have_sys_setsid)
+    sys_setsid();
+#endif
+
     mbinary = which (str_monitor);
 
     if (falsep(mbinary)) {

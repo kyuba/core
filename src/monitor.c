@@ -32,6 +32,8 @@
 #include <curie/memory.h>
 #include <curie/filesystem.h>
 
+#include <syscall/syscall.h>
+
 #include <kyuba/script.h>
 
 struct sexpr_io *stdio          = (struct sexpr_io *)0;
@@ -169,6 +171,10 @@ int cmain ()
 
     set_resize_mem_recovery_function(rm_recover);
     set_get_mem_recovery_function(gm_recover);
+
+#if defined(have_sys_setsid)
+    sys_setsid();
+#endif
 
     multiplex_all_processes();
     multiplex_sexpr();
