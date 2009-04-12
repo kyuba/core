@@ -110,6 +110,13 @@ static void trim (char *s)
 
 }
 
+static void sleep(int n)
+{
+    sys_alarm (n);
+    sys_pause ();
+/*    long long s[2] = { n, 0 };*/
+}
+
 static int unmount_everything()
 {
     int errors    = 0,
@@ -381,6 +388,7 @@ static void lastrites()
         sys_sync();
         close_all_loops();
         sys_sync();
+        sleep (1);
     } while (unmount_everything() && max_retries);
 }
 
