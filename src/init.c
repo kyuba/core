@@ -38,18 +38,6 @@
 
 #include <kyuba/script.h>
 
-static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
-{
-    cexit(22);
-    return (void *)0;
-}
-
-static void *gm_recover(unsigned long int s)
-{
-    cexit(23);
-    return (void *)0;
-}
-
 static struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
 
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
@@ -127,8 +115,7 @@ int cmain ()
 
     sexpr mbinary = sx_false;
 
-    set_resize_mem_recovery_function(rm_recover);
-    set_get_mem_recovery_function(gm_recover);
+    terminate_on_allocation_errors();
 
 #if defined(have_sys_setsid)
     sys_setsid();

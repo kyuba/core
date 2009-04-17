@@ -36,18 +36,6 @@
 struct sexpr_io *stdio        = (struct sexpr_io *)0;
 static char o_send_commands   = (char)0;
 
-static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
-{
-    cexit(22);
-    return (void *)0;
-}
-
-static void *gm_recover(unsigned long int s)
-{
-    cexit(23);
-    return (void *)0;
-}
-
 static int print_help ()
 {
 #define help "kyu (-H|-D|-R|-i)\n\n\
@@ -104,8 +92,7 @@ int cmain()
 {
     char cmd = (char)0;
 
-    set_resize_mem_recovery_function(rm_recover);
-    set_get_mem_recovery_function(gm_recover);
+    terminate_on_allocation_errors();
 
     multiplex_sexpr       ();
     stdio = sx_open_stdio ();

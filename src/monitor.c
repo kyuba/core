@@ -48,18 +48,6 @@ static enum gstate {
 
 static void run_scripts();
 
-static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
-{
-    cexit(22);
-    return (void *)0;
-}
-
-static void *gm_recover(unsigned long int s)
-{
-    cexit(23);
-    return (void *)0;
-}
-
 static void on_console_close (struct io *io, void *aux)
 {
     console = (struct io *)0;
@@ -169,8 +157,7 @@ int cmain ()
 
     subprocess_read_handler = on_script_read;
 
-    set_resize_mem_recovery_function(rm_recover);
-    set_get_mem_recovery_function(gm_recover);
+    terminate_on_allocation_errors();
 
 #if defined(have_sys_setsid)
     sys_setsid();

@@ -51,18 +51,6 @@ static struct io             *io_buf;
 
 static struct open_read_data *od        = (struct open_read_data *)0;
 
-static void *rm_recover(unsigned long int s, void *c, unsigned long int l)
-{
-    cexit(22);
-    return (void *)0;
-}
-
-static void *gm_recover(unsigned long int s)
-{
-    cexit(23);
-    return (void *)0;
-}
-
 static void mx_sx_stdio_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
     sx_write (sx_io_buf, sx);
@@ -202,8 +190,7 @@ int cmain()
         socket = curie_argv[1];
     }
 
-    set_resize_mem_recovery_function(rm_recover);
-    set_get_mem_recovery_function(gm_recover);
+    terminate_on_allocation_errors();
 
     struct dfs *fs = dfs_create(on_client_disconnect, (void *)0);
     struct dfs_directory *d_kyu  = dfs_mk_directory (fs->root, "kyu");
