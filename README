@@ -1,5 +1,5 @@
 ###- QUICK AND DIRTY: COMPILATION AND INSTALLATION -############################
-  You'll need curie-7, including icemake, and duat-5...
+  You'll need curie-8, including icemake, and duat-6...
 
     $ icemake -dif /usr
 
@@ -16,14 +16,14 @@ NOTE:
   using OpenRC ( http://roy.marples.name/projects/openrc ) with kyuba.
 
 NOTE.2:
-  Please take note of the library licence (the COPYING file), as well as the
+  Please take note of the programme licence (the COPYING file), as well as the
   credits (the CREDITS file).
 
 
 ###- DETAILS -##################################################################
 
 Compilation:
-  Make sure you have libcurie-7 and libduat-5 installed, then:
+  Make sure you have libcurie-8 and libduat-6 installed, then:
 
     $ icemake
 
@@ -33,9 +33,26 @@ Compilation:
     $ icemake --help
 
 Installation:
-  use this command to install regularly (for example into /usr, in the example):
+  use this command to install regularly (for example into /, in the example):
 
-    $ icemake -dif /some/prefix
+    $ icemake -dif /
+
+  NOTE that this will include some header files which you may not want to keep,
+  as well as shared and static libraries which may not be necessary. In
+  particular that will be /lib/libkyuba* and /include/kyuba/. Also you may wish
+  to move the docs from /share to /usr/share.
+
+  If you're on gentoo, the ebuilds on the jyujin overlay will do this for you,
+  so just use those instead of installing things manually.
+
+Configuration:
+  Check out /etc/kyu/init.sx, which comes preconfigured for use with openrc.
+  Proper documentation will follow in a later version, but the file itself
+  should be more or less self-documenting.
+
+  The file format is plain S-expressions, as used in lisp dialects. The
+  semi-colon (;) character may be used to introduce comments; they start at the
+  character and always extend to the end of the line.
 
 CONTACT:
   Best bet is IRC: freenode #kyuba
