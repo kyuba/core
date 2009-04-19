@@ -51,8 +51,8 @@ Configuration:
   should be more or less self-documenting.
 
   The file format is plain S-expressions, as used in lisp dialects. The
-  semi-colon (;) character may be used to introduce comments; they start at the
-  character and always extend to the end of the line.
+  semi-colon (;) character may be used to introduce comments; they start at that
+  character and extend to the end of the line.
 
 CONTACT:
   Best bet is IRC: freenode #kyuba
