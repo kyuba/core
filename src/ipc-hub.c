@@ -54,14 +54,12 @@ static struct open_read_data *od        = (struct open_read_data *)0;
 static void mx_sx_stdio_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
     sx_write (sx_io_buf, sx);
-    sx_destroy (sx);
 }
 
 static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
     sx_write (sx_io_buf, sx);
     sx_write (stdio, sx);
-    sx_destroy (sx);
 }
 
 static void enqueue_read_request (struct d9r_io *io, int_16 tag)

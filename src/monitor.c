@@ -123,7 +123,6 @@ static void dispatch_script (sexpr sx, sexpr context)
 static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
 {
     dispatch_script (sx, (sexpr)p);
-    sx_destroy (sx);
 }
 
 static void run_scripts()
@@ -141,8 +140,6 @@ static void run_scripts()
                                  io_open (-1)),
                      on_script_read, (void *)context);
         }
-
-        sx_destroy (n);
     }
 }
 

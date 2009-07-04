@@ -76,8 +76,6 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
     free_exec_context (ctx);
 
     sc_keep_alive (context, cdr(rs));
-
-    sx_destroy (rs);
 }
 
 static struct exec_context *sc_run_x(sexpr context, sexpr sx)
@@ -95,11 +93,9 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
         sx = cur;
     }
 
-    sx_xref (cur);
     sexpr t = cons (((do_io == (char)1) ? sym_launch_with_io
                                         : sym_launch_without_io), cur);
     sx_write (stdio, t);
-    sx_destroy (t);
 
     while (consp(cur))
     {
@@ -190,9 +186,6 @@ static void sc_keep_alive(sexpr context, sexpr sx)
 
     if (c != (struct exec_context *)0)
     {
-        sx_xref (context);
-        sx_xref (sx);
-
         multiplex_add_process(c, on_death_respawn, (void *)cons(context, sx));
     }
 }
@@ -225,9 +218,6 @@ void script_dequeue()
 
         script_run (e->context, e->sx);
 
-        sx_destroy (e->context);
-        sx_destroy (e->sx);
-
         script_queue = script_queue->next;
         free_pool_mem (e);
     }
@@ -245,9 +235,6 @@ void script_enqueue(sexpr context, sexpr sx)
     else
     {
         struct sqelement *e = (struct sqelement *)get_pool_mem (&pool);
-
-        sx_xref(context);
-        sx_xref(sx);
 
         e->sx = sx;
         e->context = context;

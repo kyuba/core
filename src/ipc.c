@@ -102,7 +102,6 @@ void multiplex_add_kyu_sexpr
         }
         while (consp (c));
 
-        sx_destroy (cbuf);
         cbuf = sx_end_of_list;
     }
 }

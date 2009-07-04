@@ -43,7 +43,6 @@ static struct sexpr_io *monitorconnection = (struct sexpr_io *)0;
 static void on_conn_read(sexpr sx, struct sexpr_io *io, void *p)
 {
     /* could be doing something, right here... */
-    sx_destroy (sx);
 }
 
 enum signal_callback_result on_sig_int (enum signal signal, void *u)
