@@ -1,0 +1,2 @@
+(system base "Base System"
+  (base-mount-point "/systems/base"))

@@ -1,0 +1,8 @@
+(daemon d-example "Example Daemon"
+  (provides "http-server")
+  (after "fs-.*")
+  (before "example")
+  (conflicts-with d-apache)
+  (schedule-limitations once-per-network)
+  (binary "example-daemon")
+  (pid-file "/var/log/example.pid"))
