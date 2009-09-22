@@ -1,18 +1,21 @@
 (on-power-on
-  (run #f "rc" "sysinit")
+  (run #f "rc" "sysinit") ; openrc: early initialisation
 
-  (run #f "rc" "boot")
+  (run #f "rc" "boot") ; openrc: switch to the "boot" runlevel
 
-  (run #f "rc" "default")
+  (run #f "rc" "default") ; openrc: switch to the "default" runlevel
 
-  (keep-alive #f "agetty" "38400" "tty1" "linux")
+  (keep-alive #f "agetty" "38400" "tty1" "linux") ; default ttys
   (keep-alive #f "agetty" "38400" "tty2" "linux")
   (keep-alive #f "agetty" "38400" "tty3" "linux")
   (keep-alive #f "agetty" "38400" "tty4" "linux")
   (keep-alive #f "agetty" "38400" "tty5" "linux")
   (keep-alive #f "agetty" "38400" "tty6" "linux")
 
-  (keep-alive "ipc-hub"))
+  (keep-alive "ipc-hub") ; this is to allow external connections
+
+  (keep-alive "kyu-job-server") ; this programme runs the jobs/*.sx files
+)
 
 (on-ctrl-alt-del
   (power-reset))

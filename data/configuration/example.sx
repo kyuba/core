@@ -1,0 +1,3 @@
+(bind s-example
+  (start-text . "hello world!")
+  (stop-text . "hello world!"))

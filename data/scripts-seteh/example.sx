@@ -2,11 +2,11 @@
   (provides "example")
   (after "fs-.*")
   (schedule-limitations once-per-host)
-  (capabilities start stop restart)
-  (function restart
-            (stop)
-            (start))
-  (function start
-            (run "echo" "hello world!"))
-  (function stop
-            (run "echo" "bye world!")))
+  (functions
+    (restart
+      (stop)
+      (start))
+    (start
+      (run "echo" start-text))
+    (stop
+      (run "echo" stop-text))))
