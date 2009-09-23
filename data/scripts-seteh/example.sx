@@ -2,6 +2,7 @@
   (provides "example")
   (after "fs-.*")
   (schedule-limitations once-per-host)
+  (io-type none)
   (functions
     (restart
       (stop)

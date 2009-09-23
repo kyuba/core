@@ -1,3 +1,4 @@
 (server seteh "Seteh Scripting Server"
   (schedule-limitations once-per-system)
-  (binary-name "kyu-seteh-scripting-server"))
+  (binary-name "kyu-seteh-server")
+  (io-type kyuba-ipc))

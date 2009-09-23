@@ -1,2 +1,3 @@
 (system base "Base System"
-  (base-mount-point "/systems/base"))
+  (system-type chroot)
+  (base-mount-point "/system/base"))
