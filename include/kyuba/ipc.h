@@ -34,8 +34,9 @@ extern "C" {
 #endif
 
 #include <curie/sexpr.h>
-#include <duat/9p-client.h>
 #include <kyuba/script.h>
+
+#define KYU_IPC_SOCKET "/dev/kyu-ipc"
 
 void multiplex_kyu                ();
 

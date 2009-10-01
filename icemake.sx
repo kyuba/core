@@ -4,10 +4,10 @@
   (version "2")
   (url "http://kyuba.org/")
 
-  (code "script" "ipc" "ipc-9p")
+  (code "script" "ipc")
 
   (headers
-        "script" "ipc" "ipc-9p")
+        "script" "ipc")
   (documentation
         "description"))
 
@@ -42,7 +42,7 @@
   (description "Kyuba IPC hub")
   (version "2")
 
-  (libraries "duat" "kyuba" "syscall")
+  (libraries "kyuba" "syscall")
 
   (code "ipc-hub")
 
@@ -54,7 +54,7 @@
   (description "Kyuba IPC client")
   (version "2")
 
-  (libraries "duat" "kyuba")
+  (libraries "kyuba")
 
   (code "ipc-client")
 

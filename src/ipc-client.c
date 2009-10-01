@@ -30,8 +30,8 @@
 #include <curie/memory.h>
 #include <curie/sexpr.h>
 #include <curie/multiplex.h>
-#include <duat/9p-client.h>
-#include <kyuba/ipc-9p.h>
+#include <curie/network.h>
+#include <kyuba/ipc.h>
 
 struct sexpr_io *stdio        = (struct sexpr_io *)0;
 static char o_send_commands   = (char)0;
@@ -90,6 +90,7 @@ static void on_event (sexpr event, void *aux)
 
 int cmain()
 {
+    struct sexpr_io *io;
     char cmd = (char)0;
 
     terminate_on_allocation_errors();
@@ -134,9 +135,11 @@ int cmain()
         cexit (print_help ());
     }
 
-    multiplex_kyu_d9c ();
+    multiplex_kyu ();
 
-    multiplex_add_kyu_d9c_socket (KYU_9P_IPC_SOCKET, on_event, (void *)0);
+    io = sx_open_socket (KYU_IPC_SOCKET);
+
+    multiplex_add_kyu_sexpr (io, on_event, (void *)0);
 
     while (multiplex() == mx_ok);
 

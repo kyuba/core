@@ -32,156 +32,90 @@
 #include <curie/multiplex.h>
 #include <curie/network.h>
 #include <syscall/syscall.h>
-#include <duat/9p-server.h>
-#include <kyuba/ipc-9p.h>
+#include <kyuba/ipc.h>
 
-struct open_read_data
+struct socket_list
 {
-    struct d9r_io         *io;
-    struct io             *iox;
-    int_16                 tag;
-    struct open_read_data *next;
+    struct sexpr_io    *io;
+    struct socket_list *next;
 };
 
-struct sexpr_io              *stdio     = (struct sexpr_io *)0;
-static struct sexpr_io       *queue;
-static struct sexpr_io       *sx_io_buf;
-static struct io             *queue_io;
-static struct io             *io_buf;
+static struct socket_list *sl = (struct socket_list *)0;
 
-static struct open_read_data *od        = (struct open_read_data *)0;
+static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux);
 
-static void mx_sx_stdio_read (sexpr sx, struct sexpr_io *io, void *aux)
+static void write_to_all_listeners (sexpr sx, struct sexpr_io *except)
 {
-    sx_write (sx_io_buf, sx);
+    struct socket_list *c = sl;
+
+    while (c != (struct socket_list *)0)
+    {
+        if (c->io != except)
+        {
+            sx_write (c->io, sx);
+        }
+        c = c->next;
+    }
+}
+
+static void remove_listener (struct sexpr_io *io)
+{
+    struct socket_list **ll = &sl;
+    struct socket_list *c   = sl;
+
+    while (c != (struct socket_list *)0)
+    {
+        if (c->io == io)
+        {
+            *ll = c->next;
+            free_pool_mem ((void *)c);
+            c = *ll;
+            continue;
+        }
+
+        ll = &(sl->next);
+        c = c->next;
+    }
+}
+
+static void add_listener (struct sexpr_io *io)
+{
+    struct memory_pool pool =
+            MEMORY_POOL_INITIALISER (sizeof (struct socket_list));
+    struct socket_list *nl = get_pool_mem (&pool);
+
+    nl->io   = io;
+    nl->next = sl;
+    sl       = nl;
+
+    multiplex_add_sexpr (io, mx_sx_queue_read, (void *)0);
 }
 
 static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
-    sx_write (sx_io_buf, sx);
-    sx_write (stdio, sx);
-}
-
-static void enqueue_read_request (struct d9r_io *io, int_16 tag)
-{
-    struct memory_pool p
-            = MEMORY_POOL_INITIALISER (sizeof (struct open_read_data));
-    struct open_read_data *c = od;
-
-    while (c != (struct open_read_data *)0)
+    if (eofp (sx))
     {
-        if (c->tag == NO_TAG_9P)
-        {
-            if (c->io == (struct d9r_io *)0)
-            {
-                c->tag           = tag;
-                c->io            = io;
-                c->iox->length   = 0;
-                c->iox->position = 0;
-                return;
-            }
-            else if (c->io == io)
-            {
-                c->tag           = tag;
-                return;
-            }
-        }
-
-        c                        = c->next;
+        remove_listener (io);
     }
-
-    c                            = get_pool_mem (&p);
-
-    c->io                        = io;
-    c->iox                       = io_open_special ();
-    c->tag                       = tag;
-    c->next                      = od;
-    od                           = c;
-}
-
-static void handle_read_requests ()
-{
-    struct open_read_data *c = od;
-
-    while (c != (struct open_read_data *)0)
+    else
     {
-        if ((c->io  != (struct d9r_io *)0) &&
-            (c->tag != NO_TAG_9P))
-        {
-            struct io *io = c->iox;
-            unsigned int l = io->length - io->position;
-
-            if (l > 0)
-            {
-                if (l > 0x1000) l = 0x1000;
-                d9r_reply_read (c->io, c->tag, l,
-                                (int_8 *)io->buffer + io->position);
-
-                io->position += l;
-                c->tag = NO_TAG_9P;
-            }
-        }
-
-        c = c->next;
+        write_to_all_listeners (sx, (void *)0);
     }
 }
 
-static void io_buf_read (struct io *io, void *aux)
+static void mx_sx_queue_connect (struct sexpr_io *io, void *aux)
 {
-    struct open_read_data *c      = od;
-    char                  *bstart = io->buffer + io->position;
-    unsigned int           len    = io->length - io->position;
+    define_symbol (sym_connected, "connected");
 
-    while (c != (struct open_read_data *)0)
-    {
-        if (c->io != (struct d9r_io *)0)
-        {
-            io_write (c->iox, bstart, len);
-        }
-        c = c->next;
-    }
+    add_listener (io);
 
-    io->position = io->length;
-
-    handle_read_requests ();
-}
-
-static void on_event_read
-        (struct d9r_io *io, int_16 tag,
-         struct dfs_file *f, int_64 offset, int_32 length)
-{
-    enqueue_read_request (io, tag);
-}
-
-static int_32 on_event_write
-        (struct dfs_file *f, int_64 offset, int_32 length, int_8 *data)
-{
-    io_write (queue_io, (char *)data, length);
-
-    return length;
-}
-
-static void on_client_disconnect (struct d9r_io *io, void *aux)
-{
-    struct open_read_data *c = od;
-
-    while (c != (struct open_read_data *)0)
-    {
-        if (c->io == io)
-        {
-            c->io            = (struct d9r_io *)0;
-            c->tag           = NO_TAG_9P;
-            c->iox->length   = 0;
-            c->iox->position = 0;
-        }
-
-        c = c->next;
-    }
+    write_to_all_listeners (cons (sym_connected, sx_end_of_list), io);
 }
 
 int cmain()
 {
-    char *socket = KYU_9P_IPC_SOCKET;
+    char *socket = KYU_IPC_SOCKET;
+    struct sexpr_io *stdio = (struct sexpr_io *)0;
 
     if (curie_argv[1] != (char *)0)
     {
@@ -190,29 +124,13 @@ int cmain()
 
     terminate_on_allocation_errors();
 
-    struct dfs *fs = dfs_create(on_client_disconnect, (void *)0);
-    struct dfs_directory *d_kyu  = dfs_mk_directory (fs->root, "kyu");
-
-    io_buf         = io_open_special();
-    sx_io_buf      = sx_open_io (io_open (-1), io_buf);
-
-    dfs_mk_file (d_kyu, "raw", (char *)0, (int_8 *)0, 0, (void *)0,
-                 on_event_read, on_event_write);
-
-    queue_io       = io_open_special();
     stdio          = sx_open_stdio();
-
-    queue = sx_open_io (queue_io, queue_io);
 
     multiplex_sexpr();
     multiplex_network();
-    multiplex_d9s();
 
-    multiplex_add_sexpr (stdio,  mx_sx_stdio_read, (void *)0);
-    multiplex_add_sexpr (queue,  mx_sx_queue_read, (void *)0);
-    multiplex_add_io    (io_buf, io_buf_read, (void *)0, (void *)0);
-
-    multiplex_add_d9s_socket (socket, fs);
+    add_listener (stdio);
+    multiplex_add_socket_sx (socket, mx_sx_queue_connect, (void *)0);
 
 #if defined(have_sys_chmod)
     sys_chmod (socket, 0660);
