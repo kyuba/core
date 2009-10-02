@@ -50,7 +50,28 @@ static enum gstate {
 
 static void change_state (enum gstate state)
 {
+    sexpr m = sx_nonexistent;
     init_state = state;
+
+    switch (state)
+    {
+        case gs_power_on:
+            m = sym_power_on;
+            break;
+        case gs_power_down:
+            m = sym_power_down;
+            break;
+        case gs_power_reset:
+            m = sym_power_reset;
+            break;
+        case gs_ctrl_alt_del:
+            m = sym_ctrl_alt_del;
+            break;
+    }
+
+    kyu_sd_write_to_all_listeners (cons (sym_event, cons (m, sx_end_of_list)),
+                                   (void *)0);
+
     (void)lx_eval (monitor_script, global_environment);
 }
 
@@ -135,14 +156,12 @@ static sexpr ctrl_alt_del (sexpr arguments, struct machine_state *state)
 
 static void on_ipc_read (sexpr sx)
 {
-//    (void)lx_eval (sx, global_environment);
+    (void)lx_eval (sx, global_environment);
 }
 
 int cmain ()
 {
     int i;
-
-    kyu_sd_on_read = on_ipc_read;
 
     terminate_on_allocation_errors();
 
@@ -152,6 +171,8 @@ int cmain ()
 
     initialise_kyu_script_commands ();
     multiplex_kyu ();
+
+    kyu_sd_on_read = on_ipc_read;
 
     global_environment = kyu_sx_default_environment ();
 

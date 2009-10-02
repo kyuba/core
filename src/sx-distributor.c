@@ -101,7 +101,7 @@ void kyu_sd_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
     }
     else
     {
-        kyu_sd_write_to_all_listeners (sx, (void *)0);
+        kyu_sd_write_to_all_listeners (sx, io);
     }
 }
 

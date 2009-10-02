@@ -44,7 +44,7 @@ void multiplex_add_kyu_sexpr      (struct sexpr_io *,
 void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
 void multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
 
-void kyu_command                  (sexpr command);
+void kyu_command                  (sexpr sx);
 void kyu_disconnect               ();
 
 #ifdef __cplusplus

@@ -1,9 +1,18 @@
 (on-event power-on
+  (run "sleep" "1")
+
   (run "echo" "power-on, nao")
+
+  (run "sleep" "1")
 
   (keep-alive "ipc-hub")
 
+  (run "sleep" "1")
+
   (run "echo" "step 2")
+
+  (run "sleep" "1")
+
   (run "echo" "step 3"))
 
 (on-event ctrl-alt-del

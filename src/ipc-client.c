@@ -31,9 +31,7 @@
 #include <curie/sexpr.h>
 #include <curie/multiplex.h>
 #include <kyuba/ipc.h>
-
-struct sexpr_io *stdio        = (struct sexpr_io *)0;
-static char o_send_commands   = (char)0;
+#include <kyuba/sx-distributor.h>
 
 static int print_help ()
 {
@@ -51,18 +49,8 @@ Options:\n\
     return 1;
 }
 
-static void on_read_stdio (sexpr e, struct sexpr_io *io, void *aux)
-{
-    if (o_send_commands == (char)1)
-    {
-        kyu_command (e);
-    }
-}
-
 static void on_event (sexpr event, void *aux)
 {
-    sx_write (stdio, event);
-
     if (consp (event))
     {
         sexpr c = car(event);
@@ -93,9 +81,7 @@ int cmain()
 
     terminate_on_allocation_errors();
 
-    multiplex_sexpr       ();
-    stdio = sx_open_stdio ();
-    multiplex_add_sexpr   (stdio, on_read_stdio, (void *)0);
+    multiplex_kyu ();
 
     for (int i = 1; curie_argv[i] != (char *)0; i++)
     {
@@ -109,18 +95,13 @@ int cmain()
                 {
                     case 'H':
                     case 'D':
-                        kyu_command (cons (sym_event, cons (sym_power_down,
-                                                            sx_end_of_list)));
                         cmd = (char)1;
                         break;
                     case 'R':
-                        kyu_command (cons (sym_event, cons (sym_power_reset,
-                                                            sx_end_of_list)));
-                        cmd = (char)1;
+                        cmd = (char)2;
                         break;
                     case 'i':
-                        o_send_commands = (char)1;
-                        cmd = (char)1;
+                        cmd = (char)3;
                         break;
                     default:
                         cexit (print_help ());
@@ -130,14 +111,22 @@ int cmain()
         }
     }
 
-    if (cmd == (char)0)
-    {
-        cexit (print_help ());
-    }
-
-    multiplex_kyu ();
-
     multiplex_add_kyu_default (on_event, (void *)0);
+
+    switch (cmd)
+    {
+        case 0:
+            cexit (print_help ());
+        case 1:
+            kyu_command (cons (sym_power_down, sx_end_of_list));
+            break;
+        case 2:
+            kyu_command (cons (sym_power_reset, sx_end_of_list));
+            break;
+        case 3:
+            kyu_sd_add_listener (sx_open_stdio ());
+            break;
+    }
 
     while (multiplex() == mx_ok);
 

@@ -30,15 +30,28 @@
 #include <curie/multiplex.h>
 #include <curie/network.h>
 #include <kyuba/ipc.h>
+#include <kyuba/sx-distributor.h>
 
 struct kaux
 {
-    void (*on_event)(sexpr, void *);
-    void  *aux;
+    void       (*on_event)(sexpr, void *);
+    void        *aux;
+    struct kaux *next;
 };
 
-static struct sexpr_io *kio = (struct sexpr_io *)0;
-static sexpr cbuf           = sx_end_of_list;
+static struct kaux *auxlist;
+static sexpr cmdtemp = sx_end_of_list;
+
+static void on_ipc_read (sexpr sx)
+{
+    struct kaux *c = auxlist;
+
+    while (c != (struct kaux *)0)
+    {
+        c->on_event (sx, c->aux);
+        c = c->next;
+    }
+}
 
 void multiplex_kyu ()
 {
@@ -49,36 +62,25 @@ void multiplex_kyu ()
         multiplex_io ();
         multiplex_sexpr ();
         multiplex_network ();
+        kyu_sd_on_read = on_ipc_read;
         installed = (char)1;
     }
 }
 
 void kyu_disconnect ()
 {
-    if (kio != (struct sexpr_io *)0)
-    {
-        sx_close_io (kio);
-        kio = (struct sexpr_io *)0;
-    }
 }
 
-void kyu_command (sexpr s)
+void kyu_command (sexpr sx)
 {
-    if (kio != (struct sexpr_io *)0)
+    if (auxlist != (struct kaux *)0)
     {
-        sx_write (kio, s);
+        kyu_sd_write_to_all_listeners (sx, (void *)0);
     }
     else
     {
-        cbuf = cons (s, cbuf);
+        cmdtemp = cons (sx, cmdtemp);
     }
-}
-
-static void on_event_read (sexpr e, struct sexpr_io *io, void *aux)
-{
-    struct kaux *k = (struct kaux *)aux;
-
-    k->on_event (e, k->aux);
 }
 
 void multiplex_add_kyu_sexpr
@@ -89,24 +91,18 @@ void multiplex_add_kyu_sexpr
 
     a->on_event = on_event;
     a->aux      = aux;
+    a->next     = auxlist;
 
-    kio = io;
+    auxlist     = a;
 
-    multiplex_add_sexpr (kio, on_event_read, a);
-
-    if (consp(cbuf))
+    while (consp (cmdtemp))
     {
-        sexpr c = cbuf;
+        kyu_sd_write_to_all_listeners (car (cmdtemp), (void *)0);
 
-        do
-        {
-            sx_write (kio, car(c));
-            c = cdr (c);
-        }
-        while (consp (c));
-
-        cbuf = sx_end_of_list;
+        cmdtemp = cdr (cmdtemp);
     }
+
+    kyu_sd_sx_queue_connect (io, (void *)0);
 }
 
 void multiplex_add_kyu_stdio (void (*on_event)(sexpr, void *), void *aux)
