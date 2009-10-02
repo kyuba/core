@@ -27,110 +27,28 @@
 */
 
 #include <curie/main.h>
-#include <curie/sexpr.h>
 #include <curie/memory.h>
 #include <curie/multiplex.h>
 #include <curie/network.h>
 #include <syscall/syscall.h>
 #include <kyuba/ipc.h>
-
-struct socket_list
-{
-    struct sexpr_io    *io;
-    struct socket_list *next;
-};
-
-static struct socket_list *sl = (struct socket_list *)0;
-
-static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux);
-
-static void write_to_all_listeners (sexpr sx, struct sexpr_io *except)
-{
-    struct socket_list *c = sl;
-
-    while (c != (struct socket_list *)0)
-    {
-        if (c->io != except)
-        {
-            sx_write (c->io, sx);
-        }
-        c = c->next;
-    }
-}
-
-static void remove_listener (struct sexpr_io *io)
-{
-    struct socket_list **ll = &sl;
-    struct socket_list *c   = sl;
-
-    while (c != (struct socket_list *)0)
-    {
-        if (c->io == io)
-        {
-            *ll = c->next;
-            free_pool_mem ((void *)c);
-            c = *ll;
-            continue;
-        }
-
-        ll = &(sl->next);
-        c = c->next;
-    }
-}
-
-static void add_listener (struct sexpr_io *io)
-{
-    struct memory_pool pool =
-            MEMORY_POOL_INITIALISER (sizeof (struct socket_list));
-    struct socket_list *nl = get_pool_mem (&pool);
-
-    nl->io   = io;
-    nl->next = sl;
-    sl       = nl;
-
-    multiplex_add_sexpr (io, mx_sx_queue_read, (void *)0);
-}
-
-static void mx_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
-{
-    if (eofp (sx))
-    {
-        remove_listener (io);
-    }
-    else
-    {
-        write_to_all_listeners (sx, (void *)0);
-    }
-}
-
-static void mx_sx_queue_connect (struct sexpr_io *io, void *aux)
-{
-    define_symbol (sym_connected, "connected");
-
-    add_listener (io);
-
-    write_to_all_listeners (cons (sym_connected, sx_end_of_list), io);
-}
+#include <kyuba/sx-distributor.h>
 
 int cmain()
 {
     char *socket = KYU_IPC_SOCKET;
-    struct sexpr_io *stdio = (struct sexpr_io *)0;
+
+    terminate_on_allocation_errors();
 
     if (curie_argv[1] != (char *)0)
     {
         socket = curie_argv[1];
     }
 
-    terminate_on_allocation_errors();
+    multiplex_kyu ();
 
-    stdio          = sx_open_stdio();
-
-    multiplex_sexpr();
-    multiplex_network();
-
-    add_listener (stdio);
-    multiplex_add_socket_sx (socket, mx_sx_queue_connect, (void *)0);
+    kyu_sd_add_listener (sx_open_stdio ());
+    multiplex_add_socket_sx (socket, kyu_sd_sx_queue_connect, (void *)0);
 
 #if defined(have_sys_chmod)
     sys_chmod (socket, 0660);

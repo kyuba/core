@@ -30,7 +30,6 @@
 #include <curie/memory.h>
 #include <curie/sexpr.h>
 #include <curie/multiplex.h>
-#include <curie/network.h>
 #include <kyuba/ipc.h>
 
 struct sexpr_io *stdio        = (struct sexpr_io *)0;
@@ -90,7 +89,6 @@ static void on_event (sexpr event, void *aux)
 
 int cmain()
 {
-    struct sexpr_io *io;
     char cmd = (char)0;
 
     terminate_on_allocation_errors();
@@ -111,11 +109,13 @@ int cmain()
                 {
                     case 'H':
                     case 'D':
-                        kyu_command (cons (sym_event, cons (sym_power_down, sx_end_of_list)));
+                        kyu_command (cons (sym_event, cons (sym_power_down,
+                                                            sx_end_of_list)));
                         cmd = (char)1;
                         break;
                     case 'R':
-                        kyu_command (cons (sym_event, cons (sym_power_reset, sx_end_of_list)));
+                        kyu_command (cons (sym_event, cons (sym_power_reset,
+                                                            sx_end_of_list)));
                         cmd = (char)1;
                         break;
                     case 'i':
@@ -137,9 +137,7 @@ int cmain()
 
     multiplex_kyu ();
 
-    io = sx_open_socket (KYU_IPC_SOCKET);
-
-    multiplex_add_kyu_sexpr (io, on_event, (void *)0);
+    multiplex_add_kyu_default (on_event, (void *)0);
 
     while (multiplex() == mx_ok);
 

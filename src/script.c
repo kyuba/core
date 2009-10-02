@@ -33,52 +33,63 @@
 
 #include <curie/shell.h>
 #include <kyuba/script.h>
+#include <kyuba/sx-distributor.h>
 
-void (*subprocess_read_handler)(sexpr, struct sexpr_io *, void *) = (void *)0;
-
-struct sqelement {
-    sexpr sx;
-    sexpr context;
-
-    struct sqelement *next;
-};
-
-static char deferred = 0;
-static struct sqelement *script_queue = (struct sqelement *)0;
-static void sc_keep_alive(sexpr, sexpr);
-
-static void on_read_write_to_console (struct io *io, void *aux)
+void initialise_kyu_script_commands ( void )
 {
-    if (console != (struct io *)0)
+    static char installed = (char)0;
+
+    if (installed == (char)0)
     {
-        unsigned int length = io->length - io->position;
-        if (length > 0)
-        {
-            io_write (console, io->buffer + io->position, length);
-            io->position += length;
-        }
+        multiplex_all_processes ();
+        initialise_seteh ();
     }
+}
+
+sexpr kyu_sx_default_environment ( void )
+{
+    static sexpr env = sx_nonexistent;
+
+    if (nexp (env))
+    {
+        env = lx_make_environment
+                (cons (cons (sym_run,
+                             lx_foreign_mu (sym_run, kyu_sc_run)),
+                 cons (cons (sym_keep_alive,
+                             lx_foreign_mu (sym_keep_alive, kyu_sc_keep_alive)),
+                       sx_end_of_list)));
+    }
+
+    return env;
 }
 
 static void on_death (struct exec_context *ctx, void *u)
 {
+    struct machine_state *stu = (struct machine_state *)u;
+    sexpr nstate;
+    sexpr rv = (ctx->exitstatus == 0) ? sx_true
+                                      : make_integer (ctx->exitstatus);
+
     free_exec_context (ctx);
 
-    deferred = 0;
-    script_dequeue();
+    nstate = lx_make_state (cons (rv, sx_end_of_list), stu->environment,
+                            stu->code, cdr(stu->dump));
+
+//    kyu_sd_write_to_all_listeners (nstate, (void *)0);
+
+    lx_continue (nstate);
 }
 
 static void on_death_respawn (struct exec_context *ctx, void *u)
 {
-    sexpr rs = (sexpr)u;
-    sexpr context = car(rs);
-
     free_exec_context (ctx);
 
-    sc_keep_alive (context, cdr(rs));
+//    kyu_sd_write_to_all_listeners ((sexpr)u, (sexpr)0);
+
+    kyu_sc_keep_alive ((sexpr)u, (void *)sx_end_of_list);
 }
 
-static struct exec_context *sc_run_x(sexpr context, sexpr sx)
+static struct exec_context *sc_run_x (sexpr sx)
 {
     sexpr cur = sx;
     unsigned int length = 0;
@@ -95,7 +106,8 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
 
     sexpr t = cons (((do_io == (char)1) ? sym_launch_with_io
                                         : sym_launch_without_io), cur);
-    sx_write (stdio, t);
+
+    kyu_sd_write_to_all_listeners (t, (void *)0);
 
     while (consp(cur))
     {
@@ -138,12 +150,8 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
 
-            if (subprocess_read_handler != (void *)0)
-            {
-                multiplex_add_sexpr
-                        (sx_open_io (proccontext->in, proccontext->out),
-                         subprocess_read_handler, (void *)context);
-            }
+            kyu_sd_sx_queue_connect
+                    (sx_open_io (proccontext->in, proccontext->out), (void *)0);
         }
         else
         {
@@ -151,9 +159,9 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
 
-            multiplex_add_io
+/*            multiplex_add_io
                     (proccontext->in,
-                     on_read_write_to_console, (void *)0, (void *)0);
+                     on_read_write_to_console, (void *)0, (void *)0);*/
         }
 
         if (proccontext->pid > 0)
@@ -169,90 +177,37 @@ static struct exec_context *sc_run_x(sexpr context, sexpr sx)
     return (struct exec_context *)0;
 }
 
-static void sc_run(sexpr context, sexpr sx)
+sexpr kyu_sc_run (sexpr arguments, struct machine_state *state)
 {
-    struct exec_context *c = sc_run_x (context, sx);
+    struct exec_context *c = sc_run_x (arguments);
 
     if (c != (struct exec_context *)0)
     {
-        deferred = 1;
-        multiplex_add_process(c, on_death, (void *)0);
+        sexpr continuation = lx_make_state
+                (sx_end_of_list, sx_end_of_list, sx_end_of_list, state->dump);
+        multiplex_add_process (c, on_death, (void *)continuation);
+
+        state->environment = sx_end_of_list;
+        state->stack = sx_end_of_list;
+        state->code = sx_end_of_list;
+        state->dump = sx_end_of_list;
+
+        return sx_nonexistent;
     }
+
+    return sx_false;
 }
 
-static void sc_keep_alive(sexpr context, sexpr sx)
+sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state)
 {
-    struct exec_context *c = sc_run_x (context, sx);
+    struct exec_context *c = sc_run_x (arguments);
 
     if (c != (struct exec_context *)0)
     {
-        multiplex_add_process(c, on_death_respawn, (void *)cons(context, sx));
+        multiplex_add_process(c, on_death_respawn, (void *)arguments);
+
+        return sx_true;
     }
-}
 
-static void script_run(sexpr context, sexpr sx)
-{
-    if (consp(sx))
-    {
-        sexpr scar = car(sx);
-        sexpr scdr = cdr(sx);
-
-        if (truep(equalp(scar, sym_run))) {
-            sc_run (context, scdr);
-        } else if (truep(equalp(scar, sym_keep_alive))) {
-            sc_keep_alive (context, scdr);
-        } else if (truep(equalp(scar, sym_exit))) {
-            cexit (sx_integer(scdr));
-        }
-    }
-}
-
-void script_dequeue()
-{
-    if (deferred == 1) return;
-
-    while ((script_queue != (struct sqelement *)0) &&
-           (deferred == 0))
-    {
-        struct sqelement *e = script_queue;
-
-        script_run (e->context, e->sx);
-
-        script_queue = script_queue->next;
-        free_pool_mem (e);
-    }
-}
-
-void script_enqueue(sexpr context, sexpr sx)
-{
-    static struct memory_pool pool
-            = MEMORY_POOL_INITIALISER(sizeof(struct sqelement));
-
-    if (deferred == 0)
-    {
-        script_run (context, sx);
-    }
-    else
-    {
-        struct sqelement *e = (struct sqelement *)get_pool_mem (&pool);
-
-        e->sx = sx;
-        e->context = context;
-        e->next = (struct sqelement *)0;
-
-        if (script_queue == (struct sqelement *)0)
-        {
-            script_queue = e;
-        }
-        else
-        {
-            struct sqelement *cur = script_queue;
-            while (cur->next != (struct sqelement *)0)
-            {
-                cur = cur->next;
-            }
-
-            cur->next = e;
-        }
-    }
+    return sx_false;
 }

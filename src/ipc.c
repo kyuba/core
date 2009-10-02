@@ -28,6 +28,7 @@
 
 #include <curie/memory.h>
 #include <curie/multiplex.h>
+#include <curie/network.h>
 #include <kyuba/ipc.h>
 
 struct kaux
@@ -43,9 +44,11 @@ void multiplex_kyu ()
 {
     static char installed = (char)0;
 
-    if (installed == (char)0) {
-        multiplex_io    ();
+    if (installed == (char)0)
+    {
+        multiplex_io ();
         multiplex_sexpr ();
+        multiplex_network ();
         installed = (char)1;
     }
 }
@@ -104,4 +107,16 @@ void multiplex_add_kyu_sexpr
 
         cbuf = sx_end_of_list;
     }
+}
+
+void multiplex_add_kyu_stdio (void (*on_event)(sexpr, void *), void *aux)
+{
+    struct sexpr_io *io = sx_open_stdio ();
+    multiplex_add_kyu_sexpr (io, on_event, aux);
+}
+
+void multiplex_add_kyu_default (void (*on_event)(sexpr, void *), void *aux)
+{
+    struct sexpr_io *io = sx_open_socket (KYU_IPC_SOCKET);
+    multiplex_add_kyu_sexpr (io, on_event, aux);
 }

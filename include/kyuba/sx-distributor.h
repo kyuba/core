@@ -26,26 +26,22 @@
  * THE SOFTWARE.
 */
 
-#ifndef KYUBA_IPC_H
-#define KYUBA_IPC_H
+#ifndef KYUBA_SX_DISTRIBUTOR_H
+#define KYUBA_SX_DISTRIBUTOR_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <kyuba/script.h>
+#include <curie/sexpr.h>
 
-#define KYU_IPC_SOCKET "/dev/kyu-ipc"
+extern void (*kyu_sd_on_read) (sexpr);
 
-void multiplex_kyu                ();
-
-void multiplex_add_kyu_sexpr      (struct sexpr_io *,
-                                   void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
-
-void kyu_command                  (sexpr command);
-void kyu_disconnect               ();
+void kyu_sd_write_to_all_listeners (sexpr sx, struct sexpr_io *except);
+void kyu_sd_remove_listener (struct sexpr_io *io);
+void kyu_sd_add_listener (struct sexpr_io *io);
+void kyu_sd_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux);
+void kyu_sd_sx_queue_connect (struct sexpr_io *io, void *aux);
 
 #ifdef __cplusplus
 }

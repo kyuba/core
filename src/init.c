@@ -51,7 +51,7 @@ enum signal_callback_result on_sig_int (enum signal signal, void *u)
 
     if (msg == (sexpr)0)
     {
-        msg = cons (sym_event, cons(sym_ctrl_alt_del, sx_end_of_list));
+        msg = cons (sym_ctrl_alt_del, sx_end_of_list);
     }
 
     if (monitorconnection != (struct sexpr_io *)0)

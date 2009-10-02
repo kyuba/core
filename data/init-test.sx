@@ -1,0 +1,16 @@
+(on-event power-on
+  (run "echo" "power-on, nao")
+
+  (keep-alive "ipc-hub")
+
+  (run "echo" "step 2")
+  (run "echo" "step 3"))
+
+(on-event ctrl-alt-del
+  (power-reset))
+
+(on-event power-reset
+  (run #f "echo" "power-reset, nao"))
+
+(on-event power-down
+  (run #f "echo" "power-down, nao"))

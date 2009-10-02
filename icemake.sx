@@ -4,10 +4,10 @@
   (version "2")
   (url "http://kyuba.org/")
 
-  (code "script" "ipc")
+  (code "script" "ipc" "sx-distributor")
 
   (headers
-        "script" "ipc")
+        "script" "ipc" "sx-distributor")
   (documentation
         "description"))
 
@@ -16,7 +16,7 @@
   (description "Kyuba generic monitor programme")
   (version "2")
 
-  (libraries "kyuba" "syscall")
+  (libraries "kyuba" "syscall" "seteh")
 
   (code "monitor")
 

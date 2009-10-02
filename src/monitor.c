@@ -34,10 +34,12 @@
 
 #include <syscall/syscall.h>
 
-#include <kyuba/script.h>
+#include <kyuba/ipc.h>
+#include <kyuba/sx-distributor.h>
 
-struct sexpr_io *stdio          = (struct sexpr_io *)0;
-struct io       *console        = (struct io *)0;
+static sexpr monitor_script = sx_end_of_list;
+static unsigned int open_script_files = 0;
+static sexpr global_environment;
 
 static enum gstate {
     gs_power_on,
@@ -46,113 +48,101 @@ static enum gstate {
     gs_ctrl_alt_del
 } init_state = gs_power_on;
 
-static void run_scripts();
-
-static void on_console_close (struct io *io, void *aux)
+static void change_state (enum gstate state)
 {
-    console = (struct io *)0;
+    init_state = state;
+    (void)lx_eval (monitor_script, global_environment);
 }
 
-static void do_dispatch_script (sexpr sx, sexpr context)
+void script_reading_finished ( void )
 {
-    sexpr cur = sx;
+    open_script_files--;
 
-    while (consp(cur))
+    if (open_script_files == 0)
     {
-        sexpr t = car (cur);
-        sexpr tcar = car(t);
-
-        if (truep(equalp(tcar, sym_power_reset)))
-        {
-            init_state = gs_power_reset;
-            run_scripts();
-        }
-        else if (truep(equalp(tcar, sym_power_down)))
-        {
-            init_state = gs_power_down;
-            run_scripts();
-        }
-        else
-        {
-            script_enqueue (context, t);
-        }
-
-        cur = cdr(cur);
-    }
-}
-
-static void do_dispatch_event (sexpr sx, sexpr context)
-{
-    if (truep(equalp(car(sx), sym_ctrl_alt_del)))
-    {
-        init_state = gs_ctrl_alt_del;
-        run_scripts();
-    }
-    else if (truep(equalp(car(sx), sym_power_down)))
-    {
-        init_state = gs_power_down;
-        run_scripts();
-    }
-    else if (truep(equalp(car(sx), sym_power_reset)))
-    {
-        init_state = gs_power_reset;
-        run_scripts();
-    }
-}
-
-static void dispatch_script (sexpr sx, sexpr context)
-{
-    if (consp (sx))
-    {
-        sexpr ccar = car(sx);
-
-        if (truep(equalp(ccar, sym_event)))
-        {
-            do_dispatch_event (cdr(sx), context);
-        } else if (truep(equalp(ccar, sym_always)) ||
-            ((init_state == gs_power_on) && truep(equalp(ccar, sym_on_power_on))) ||
-            ((init_state == gs_power_down) && truep(equalp(ccar, sym_on_power_down))) ||
-            ((init_state == gs_power_reset) && truep(equalp(ccar, sym_on_power_reset))) ||
-            ((init_state == gs_ctrl_alt_del) && truep(equalp(ccar, sym_on_ctrl_alt_del))))
-        {
-            do_dispatch_script (cdr(sx), context);
-        }
+        monitor_script = sx_reverse (monitor_script);
+        change_state (gs_power_on);
     }
 }
 
 static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
 {
-    dispatch_script (sx, (sexpr)p);
-}
-
-static void run_scripts()
-{
-    sexpr context = sx_end_of_list;
-
-    for (int i = 1; curie_argv[i] != (char *)0; i++)
+    if (eofp (sx))
     {
-        sexpr n = make_string (curie_argv[i]);
-
-        if (filep(n))
-        {
-            multiplex_add_sexpr
-                    (sx_open_io (io_open_read (curie_argv[i]),
-                                 io_open (-1)),
-                     on_script_read, (void *)context);
-        }
+        script_reading_finished ();
+    }
+    else
+    {
+        monitor_script = cons (sx, monitor_script);
     }
 }
 
-static void on_stdio_read(sexpr sx, struct sexpr_io *io, void *p)
+sexpr on_event (sexpr arguments, struct machine_state *state)
 {
-    on_script_read(sx, io, p);
+    if (eolp (state->stack))
+    {
+        sexpr tstate = car (arguments);
+
+        if (truep(equalp(tstate, sym_always)) ||
+            ((init_state == gs_power_on) &&
+                  truep(equalp(tstate, sym_power_on))) ||
+            ((init_state == gs_power_down) &&
+                  truep(equalp(tstate, sym_power_down))) ||
+            ((init_state == gs_power_reset) &&
+                  truep(equalp(tstate, sym_power_reset))) ||
+            ((init_state == gs_ctrl_alt_del) &&
+                  truep(equalp(tstate, sym_ctrl_alt_del))))
+        {
+            state->code = cdr (state->code);
+            return sx_nonexistent;
+                /* makes the seteh code execute the remainder of the script */
+        }
+        else
+        {
+            return sx_false;
+            // wrong state
+        }
+    }
+    else
+    {
+        return sx_true;
+    }
+}
+
+static sexpr power_on (sexpr arguments, struct machine_state *state)
+{
+    change_state (gs_power_on);
+    return sx_true;
+}
+
+static sexpr power_down (sexpr arguments, struct machine_state *state)
+{
+    change_state (gs_power_down);
+    return sx_true;
+}
+
+static sexpr power_reset (sexpr arguments, struct machine_state *state)
+{
+    change_state (gs_power_reset);
+    return sx_true;
+}
+
+static sexpr ctrl_alt_del (sexpr arguments, struct machine_state *state)
+{
+    change_state (gs_ctrl_alt_del);
+    return sx_true;
+}
+
+static void on_ipc_read (sexpr sx)
+{
+//    (void)lx_eval (sx, global_environment);
 }
 
 int cmain ()
 {
-    sexpr context = sx_end_of_list;
+    int i;
 
-    subprocess_read_handler = on_script_read;
+    kyu_sd_on_read = on_ipc_read;
 
     terminate_on_allocation_errors();
 
@@ -160,19 +150,46 @@ int cmain ()
     sys_setsid();
 #endif
 
-    multiplex_all_processes();
-    multiplex_sexpr();
+    initialise_kyu_script_commands ();
+    multiplex_kyu ();
 
-    stdio = sx_open_stdio();
-    if ((console = io_open (2)) != (struct io *)0)
+    global_environment = kyu_sx_default_environment ();
+
+    global_environment =
+            lx_environment_bind
+                (global_environment, sym_on_event,
+                 lx_foreign_mu (sym_on_event, on_event));
+    global_environment =
+            lx_environment_bind
+                (global_environment, sym_power_on,
+                 lx_foreign_mu (sym_power_on, power_on));
+    global_environment =
+            lx_environment_bind
+                (global_environment, sym_power_down,
+                 lx_foreign_mu (sym_power_down, power_down));
+    global_environment =
+            lx_environment_bind
+                (global_environment, sym_power_reset,
+                 lx_foreign_mu (sym_power_reset, power_reset));
+    global_environment =
+            lx_environment_bind
+                (global_environment, sym_ctrl_alt_del,
+                 lx_foreign_mu (sym_ctrl_alt_del, ctrl_alt_del));
+
+    for (i = 1; curie_argv[i] != (char *)0; i++)
     {
-        console->type = iot_write;
-        multiplex_add_io (console, (void *)0, on_console_close, (void *)0);
+        sexpr n = make_string (curie_argv[i]);
+
+        if (filep(n))
+        {
+            open_script_files++;
+            multiplex_add_sexpr
+                    (sx_open_io (io_open_read (curie_argv[i]), io_open (-1)),
+                     on_script_read, (void *)0);
+        }
     }
 
-    run_scripts();
-
-    multiplex_add_sexpr(stdio, on_stdio_read, (void *)context);
+    kyu_sd_add_listener (sx_open_stdio ());
 
     while (multiplex() == mx_ok);
 
