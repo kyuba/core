@@ -33,6 +33,48 @@
 extern "C" {
 #endif
 
+#define kyu_module_type_identifier  0x5de /* מ */
+#define kyu_service_type_identifier 0x5e2 /* ע */
+#define kyu_system_type_identifier  0x5e6 /* צ */
+
+#define kmodulep(sx)  sx_customp(sx,kyu_module_type_identifier)
+#define kservicep(sx) sx_customp(sx,kyu_service_type_identifier)
+#define ksystemp(sx)  sx_customp(sx,kyu_system_type_identifier)
+
+struct kyu_module
+{
+    unsigned int type;
+    sexpr name;
+    sexpr description;
+    sexpr provides;
+    sexpr requires;
+    sexpr before;
+    sexpr after;
+    sexpr conflicts;
+    sexpr schedulerflags;
+    sexpr functions;
+};
+
+struct kyu_service
+{
+    unsigned int type;
+    sexpr name;
+    sexpr description;
+    sexpr schedulerflags;
+    sexpr modules;
+};
+
+struct kyu_system
+{
+    unsigned int type;
+    sexpr name;
+    sexpr description;
+    sexpr location;
+    sexpr schedulerflags;
+    sexpr modules;
+    sexpr services;
+};
+
 void initialise_kyu_types ( void );
 
 #ifdef __cplusplus
