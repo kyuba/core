@@ -32,7 +32,6 @@
 #include <curie/network.h>
 #include <syscall/syscall.h>
 #include <kyuba/ipc.h>
-#include <kyuba/sx-distributor.h>
 
 int cmain()
 {

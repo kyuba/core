@@ -29,7 +29,7 @@
 #include <curie/multiplex.h>
 #include <curie/memory.h>
 
-#include <kyuba/sx-distributor.h>
+#include <kyuba/ipc.h>
 
 void (*kyu_sd_on_read) (sexpr) = (void (*) (sexpr))0;
 

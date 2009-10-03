@@ -26,27 +26,14 @@
  * THE SOFTWARE.
 */
 
-#ifndef KYUBA_IPC_H
-#define KYUBA_IPC_H
+#ifndef KYUBA_TYPES_H
+#define KYUBA_TYPES_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <kyuba/script.h>
-#include <kyuba/sx-distributor.h>
-
-#define KYU_IPC_SOCKET "/dev/kyu-ipc"
-
-void multiplex_kyu                ();
-
-void multiplex_add_kyu_sexpr      (struct sexpr_io *,
-                                   void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
-
-void kyu_command                  (sexpr sx);
-void kyu_disconnect               ();
+void initialise_kyu_types ( void );
 
 #ifdef __cplusplus
 }

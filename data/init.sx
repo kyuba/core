@@ -1,9 +1,9 @@
 (on-event power-on
-  (run #f "rc" "sysinit")
+  (run "rc" "sysinit")
 
-  (run #f "rc" "boot")
+  (run "rc" "boot")
 
-  (run #f "rc" "default")
+  (run "rc" "default")
 
   (keep-alive #f "agetty" "38400" "tty1" "linux")
   (keep-alive #f "agetty" "38400" "tty2" "linux")

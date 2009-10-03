@@ -30,7 +30,6 @@
 #include <curie/multiplex.h>
 #include <curie/network.h>
 #include <kyuba/ipc.h>
-#include <kyuba/sx-distributor.h>
 
 struct kaux
 {

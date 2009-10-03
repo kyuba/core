@@ -35,44 +35,50 @@
 #include <syscall/syscall.h>
 
 #include <kyuba/ipc.h>
-#include <kyuba/sx-distributor.h>
 
 static sexpr monitor_script = sx_end_of_list;
 static unsigned int open_script_files = 0;
 static sexpr global_environment;
 
 static enum gstate {
+    gs_none,
     gs_power_on,
     gs_power_reset,
     gs_power_down,
     gs_ctrl_alt_del
-} init_state = gs_power_on;
+} init_state = gs_none;
 
 static void change_state (enum gstate state)
 {
     sexpr m = sx_nonexistent;
-    init_state = state;
 
-    switch (state)
+    if (init_state != state)
     {
-        case gs_power_on:
-            m = sym_power_on;
-            break;
-        case gs_power_down:
-            m = sym_power_down;
-            break;
-        case gs_power_reset:
-            m = sym_power_reset;
-            break;
-        case gs_ctrl_alt_del:
-            m = sym_ctrl_alt_del;
-            break;
+        init_state = state;
+
+        switch (state)
+        {
+            case gs_power_on:
+                m = sym_power_on;
+                break;
+            case gs_power_down:
+                m = sym_power_down;
+                break;
+            case gs_power_reset:
+                m = sym_power_reset;
+                break;
+            case gs_ctrl_alt_del:
+                m = sym_ctrl_alt_del;
+                break;
+            default:
+                break;
+        }
+
+        kyu_sd_write_to_all_listeners (cons(sym_event, cons(m, sx_end_of_list)),
+                                       (void *)0);
+
+        (void)lx_eval (monitor_script, global_environment);
     }
-
-    kyu_sd_write_to_all_listeners (cons (sym_event, cons (m, sx_end_of_list)),
-                                   (void *)0);
-
-    (void)lx_eval (monitor_script, global_environment);
 }
 
 void script_reading_finished ( void )

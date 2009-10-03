@@ -26,30 +26,26 @@
  * THE SOFTWARE.
 */
 
-#ifndef KYUBA_IPC_H
-#define KYUBA_IPC_H
+#include <curie/main.h>
+#include <curie/multiplex.h>
+#include <curie/memory.h>
+#include <kyuba/ipc.h>
+#include <kyuba/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <kyuba/script.h>
-#include <kyuba/sx-distributor.h>
-
-#define KYU_IPC_SOCKET "/dev/kyu-ipc"
-
-void multiplex_kyu                ();
-
-void multiplex_add_kyu_sexpr      (struct sexpr_io *,
-                                   void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
-
-void kyu_command                  (sexpr sx);
-void kyu_disconnect               ();
-
-#ifdef __cplusplus
+static void on_event (sexpr event, void *aux)
+{
 }
-#endif
 
-#endif
+int cmain ()
+{
+    terminate_on_allocation_errors ();
+
+    initialise_kyu_types ();
+
+    multiplex_kyu ();
+    multiplex_add_kyu_stdio (on_event, (void *)0);
+
+    while (multiplex() == mx_ok);
+
+    return 0;
+}

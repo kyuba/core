@@ -32,8 +32,7 @@
 #include <curie/memory.h>
 
 #include <curie/shell.h>
-#include <kyuba/script.h>
-#include <kyuba/sx-distributor.h>
+#include <kyuba/ipc.h>
 
 void initialise_kyu_script_commands ( void )
 {

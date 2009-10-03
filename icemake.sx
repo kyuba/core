@@ -4,10 +4,10 @@
   (version "2")
   (url "http://kyuba.org/")
 
-  (code "script" "ipc" "sx-distributor")
+  (code "script" "ipc" "sx-distributor" "types")
 
   (headers
-        "script" "ipc" "sx-distributor")
+        "script" "ipc" "sx-distributor" "types")
   (documentation
         "description"))
 
@@ -60,6 +60,15 @@
 
   (documentation
         "kyu"))
+
+(programme "kyu-job-server" libcurie
+  (name "kyu-job-server")
+  (description "Kyuba Job Server")
+  (version "1")
+
+  (libraries "kyuba")
+
+  (code "job-server"))
 
 (programme "kyu-scheduler" libcurie
   (name "kyu-scheduler")

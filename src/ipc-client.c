@@ -31,7 +31,6 @@
 #include <curie/sexpr.h>
 #include <curie/multiplex.h>
 #include <kyuba/ipc.h>
-#include <kyuba/sx-distributor.h>
 
 static int print_help ()
 {
