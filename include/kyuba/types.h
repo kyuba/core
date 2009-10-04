@@ -5,7 +5,7 @@
 */
 
 /*
- * Copyright (c) 2008, 2009, Kyuba Project Members
+ * Copyright (c) 2009, Kyuba Project Members
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <curie/sexpr.h>
 
 #define kyu_module_type_identifier  0x5de /* מ */
 #define kyu_service_type_identifier 0x5e2 /* ע */
@@ -76,6 +78,15 @@ struct kyu_system
 };
 
 void initialise_kyu_types ( void );
+sexpr kyu_make_module
+        (sexpr name, sexpr description, sexpr provides, sexpr requires,
+         sexpr before, sexpr after, sexpr conflicts, sexpr schedulerflags,
+         sexpr functions);
+sexpr kyu_make_service
+        (sexpr name, sexpr description, sexpr schedulerflags, sexpr modules);
+sexpr kyu_make_system
+        (sexpr name, sexpr description, sexpr location, sexpr schedulerflags,
+         sexpr modules, sexpr services);
 
 #ifdef __cplusplus
 }
