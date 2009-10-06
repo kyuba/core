@@ -1,8 +1,10 @@
 (on-event power-on
 
+  (keep-alive "kyu-server-configuration" "data/configuration/.*\\.sx")
+
   (keep-alive "ipc-hub")
 
-  (keep-alive "kyu-job-server"))
+  (keep-alive "kyu-server-job"))
 
 (on-event ctrl-alt-del
   (power-reset))

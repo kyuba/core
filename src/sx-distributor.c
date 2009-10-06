@@ -113,3 +113,10 @@ void kyu_sd_sx_queue_connect (struct sexpr_io *io, void *aux)
 
     kyu_sd_write_to_all_listeners (cons (sym_connected, sx_end_of_list), io);
 }
+
+void kyu_sd_add_listener_stdio ( void )
+{
+    struct sexpr_io *io = sx_open_stdio ();
+
+    kyu_sd_add_listener (io);
+}

@@ -216,7 +216,7 @@ int cmain ()
         }
     }
 
-    kyu_sd_add_listener (sx_open_stdio ());
+    kyu_sd_add_listener_stdio ();
 
     while (multiplex() == mx_ok);
 

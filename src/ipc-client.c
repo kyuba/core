@@ -123,7 +123,7 @@ int cmain()
             kyu_command (cons (sym_power_reset, sx_end_of_list));
             break;
         case 3:
-            kyu_sd_add_listener (sx_open_stdio ());
+            kyu_sd_add_listener_stdio ();
             break;
     }
 

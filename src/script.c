@@ -191,35 +191,52 @@ static struct exec_context *sc_run_x (sexpr sx)
 
 sexpr kyu_sc_run (sexpr arguments, struct machine_state *state)
 {
-    struct exec_context *c = sc_run_x (arguments);
-
-    if (c != (struct exec_context *)0)
+    if (eolp (state->stack))
     {
-        sexpr continuation = lx_make_state
-                (sx_end_of_list, sx_end_of_list, sx_end_of_list, state->dump);
-        multiplex_add_process (c, on_death, (void *)continuation);
-
-        state->environment = sx_end_of_list;
-        state->stack = sx_end_of_list;
-        state->code = sx_end_of_list;
-        state->dump = sx_end_of_list;
-
+        state->stack = cons(lx_foreign_mu (sym_run, kyu_sc_run), state->stack);
         return sx_nonexistent;
     }
+    else
+    {
+        struct exec_context *c = sc_run_x (arguments);
 
-    return sx_false;
+        if (c != (struct exec_context *)0)
+        {
+            sexpr continuation = lx_make_state
+                    (sx_end_of_list,sx_end_of_list,sx_end_of_list, state->dump);
+            multiplex_add_process (c, on_death, (void *)continuation);
+
+            state->environment = sx_end_of_list;
+            state->stack = sx_end_of_list;
+            state->code = sx_end_of_list;
+            state->dump = sx_end_of_list;
+
+            return sx_nonexistent;
+        }
+
+        return sx_false;
+    }
 }
 
 sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state)
 {
-    struct exec_context *c = sc_run_x (arguments);
-
-    if (c != (struct exec_context *)0)
+    if (!eolp ((sexpr)state) && eolp (state->stack))
     {
-        multiplex_add_process(c, on_death_respawn, (void *)arguments);
-
-        return sx_true;
+        state->stack = cons(lx_foreign_mu (sym_keep_alive, kyu_sc_keep_alive),
+                            state->stack);
+        return sx_nonexistent;
     }
+    else
+    {
+        struct exec_context *c = sc_run_x (arguments);
 
-    return sx_false;
+        if (c != (struct exec_context *)0)
+        {
+            multiplex_add_process(c, on_death_respawn, (void *)arguments);
+
+            return sx_true;
+        }
+
+        return sx_false;
+    }
 }

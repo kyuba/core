@@ -46,7 +46,7 @@ int cmain()
 
     multiplex_kyu ();
 
-    kyu_sd_add_listener (sx_open_stdio ());
+    kyu_sd_add_listener_stdio ();
     multiplex_add_socket_sx (socket, kyu_sd_sx_queue_connect, (void *)0);
 
 #if defined(have_sys_chmod)

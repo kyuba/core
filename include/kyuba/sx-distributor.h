@@ -40,6 +40,7 @@ extern void (*kyu_sd_on_read) (sexpr);
 void kyu_sd_write_to_all_listeners (sexpr sx, struct sexpr_io *except);
 void kyu_sd_remove_listener (struct sexpr_io *io);
 void kyu_sd_add_listener (struct sexpr_io *io);
+void kyu_sd_add_listener_stdio ( void );
 void kyu_sd_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux);
 void kyu_sd_sx_queue_connect (struct sexpr_io *io, void *aux);
 

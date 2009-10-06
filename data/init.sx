@@ -12,9 +12,11 @@
   (keep-alive #f "agetty" "38400" "tty5" "linux")
   (keep-alive #f "agetty" "38400" "tty6" "linux")
 
+  (keep-alive "kyu-server-configuration" "/etc/configuration/.*\\.sx")
+
   (keep-alive "ipc-hub")
 
-  (keep-alive "kyu-job-server"))
+  (keep-alive "kyu-server-job"))
 
 (on-event ctrl-alt-del
   (power-reset))

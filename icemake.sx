@@ -61,14 +61,14 @@
   (documentation
         "kyu"))
 
-(programme "kyu-job-server" libcurie
-  (name "kyu-job-server")
+(programme "kyu-server-job" libcurie
+  (name "kyu-server-job")
   (description "Kyuba Job Server")
   (version "1")
 
   (libraries "kyuba")
 
-  (code "job-server"))
+  (code "server-job"))
 
 (programme "kyu-scheduler" libcurie
   (name "kyu-scheduler")
@@ -86,7 +86,16 @@
 
   (libraries "seteh" "kyuba")
 
-  (code "seteh-server"))
+  (code "server-seteh"))
+
+(programme "kyu-server-configuration" libcurie
+  (name "kyu-server-configuration")
+  (description "Kyuba Configuration Server")
+  (version "1")
+
+  (libraries "seteh" "kyuba")
+
+  (code "configuration"))
 
 (programme "power" libcurie
   (name "power")
