@@ -38,15 +38,19 @@ extern "C" {
 
 #define KYU_IPC_SOCKET "/dev/kyu-ipc"
 
-void multiplex_kyu                ();
+void  multiplex_kyu                ();
 
-void multiplex_add_kyu_sexpr      (struct sexpr_io *,
+void  multiplex_add_kyu_sexpr      (struct sexpr_io *,
                                    void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
-void multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
+void  multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
+void  multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
+void  multiplex_add_kyu_callback   (void (*on_event)(sexpr, void *), void *aux);
 
-void kyu_command                  (sexpr sx);
-void kyu_disconnect               ();
+void  kyu_command                  (sexpr sx);
+void  kyu_disconnect               ();
+
+sexpr kyu_get_configuration_all    (sexpr id);
+sexpr kyu_get_configuration        (sexpr id, sexpr key);
 
 #ifdef __cplusplus
 }

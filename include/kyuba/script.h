@@ -52,12 +52,19 @@ define_symbol (sym_exit,               "exit");
 define_symbol (sym_error,              "error");
 define_symbol (sym_disconnect,         "disconnect");
 define_symbol (sym_process_terminated, "process-terminated");
+define_symbol (sym_get_configuration,  "get-configuration");
+define_symbol (sym_configuration,      "configuration");
+define_symbol (sym_message,            "message");
+define_symbol (sym_request,            "request");
+define_symbol (sym_reply,              "reply");
 
 void initialise_kyu_script_commands ( void );
 
 sexpr kyu_sx_default_environment ( void );
 sexpr kyu_sc_run (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state);
+sexpr kyu_sc_get_configuration (sexpr arguments, struct machine_state *state);
+sexpr kyu_sc_message (sexpr arguments, struct machine_state *state);
 
 #ifdef __cplusplus
 }

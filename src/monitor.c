@@ -92,7 +92,7 @@ void script_reading_finished ( void )
     }
 }
 
-static void on_script_read(sexpr sx, struct sexpr_io *io, void *p)
+static void on_script_read (sexpr sx, struct sexpr_io *io, void *p)
 {
     if (eofp (sx))
     {
@@ -160,7 +160,7 @@ static sexpr ctrl_alt_del (sexpr arguments, struct machine_state *state)
     return sx_true;
 }
 
-static void on_ipc_read (sexpr sx)
+static void on_ipc_read (sexpr sx, void *aux)
 {
     (void)lx_eval (sx, global_environment);
 }
@@ -176,9 +176,8 @@ int cmain ()
 #endif
 
     initialise_kyu_script_commands ();
-    multiplex_kyu ();
 
-    kyu_sd_on_read = on_ipc_read;
+    multiplex_add_kyu_callback (on_ipc_read, (void *)0);
 
     global_environment = kyu_sx_default_environment ();
 

@@ -33,9 +33,7 @@
 #include <seteh/lambda.h>
 #include <kyuba/ipc.h>
 
-define_symbol (sym_bind,              "bind");
-define_symbol (sym_get_configuration, "get-configuration");
-define_symbol (sym_configuration,     "configuration");
+define_symbol (sym_bind, "bind");
 
 static sexpr data;
 
@@ -45,14 +43,19 @@ static void on_event (sexpr sx, void *aux)
     {
         sexpr a = car (sx);
 
-        if (truep (equalp (a, sym_get_configuration)))
+        if (truep (equalp (a, sym_request)))
         {
-            a = car (cdr (sx));
+            sx = cdr (sx);
+            a = car (sx);
 
-            kyu_sd_write_to_all_listeners
-                    (cons (sym_configuration, cons (a, cons
-                     (lx_environment_lookup (data, a), sx_end_of_list))),
-                     (void *)0);
+            if (truep (equalp (a, sym_configuration)))
+            {
+                a = car (cdr (sx));
+
+                kyu_command (cons (sym_reply, cons (sym_configuration, cons (a,
+                             cons (lx_environment_lookup (data, a),
+                             sx_end_of_list)))));
+            }
         }
     }
 }

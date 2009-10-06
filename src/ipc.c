@@ -85,14 +85,10 @@ void kyu_command (sexpr sx)
 void multiplex_add_kyu_sexpr
         (struct sexpr_io *io, void (*on_event)(sexpr, void *), void *aux)
 {
-    struct memory_pool p = MEMORY_POOL_INITIALISER (sizeof (struct kaux));
-    struct kaux *a = get_pool_mem (&p);
-
-    a->on_event = on_event;
-    a->aux      = aux;
-    a->next     = auxlist;
-
-    auxlist     = a;
+    if (on_event != (void (*)(sexpr, void *))0)
+    {
+        multiplex_add_kyu_callback (on_event, aux);
+    }
 
     while (consp (cmdtemp))
     {
@@ -114,4 +110,16 @@ void multiplex_add_kyu_default (void (*on_event)(sexpr, void *), void *aux)
 {
     struct sexpr_io *io = sx_open_socket (KYU_IPC_SOCKET);
     multiplex_add_kyu_sexpr (io, on_event, aux);
+}
+
+void multiplex_add_kyu_callback (void (*on_event)(sexpr, void *), void *aux)
+{
+    struct memory_pool p = MEMORY_POOL_INITIALISER (sizeof (struct kaux));
+    struct kaux *a = get_pool_mem (&p);
+
+    a->on_event = on_event;
+    a->aux      = aux;
+    a->next     = auxlist;
+
+    auxlist     = a;
 }

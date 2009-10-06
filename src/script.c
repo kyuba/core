@@ -34,14 +34,87 @@
 #include <curie/shell.h>
 #include <kyuba/ipc.h>
 
+struct open_cfg_requests
+{
+    sexpr id;
+    sexpr key;
+    sexpr continuation;
+    struct open_cfg_requests *next;
+};
+
+static sexpr configuration_data;
+static struct open_cfg_requests *open_cfg_requests = (void *)0;
+
+static void script_command_callback (sexpr sx, void *aux)
+{
+    if (consp (sx))
+    {
+        sexpr a = car (sx);
+
+        if (truep (equalp (a, sym_reply)))
+        {
+            sx = cdr (sx);
+            a  = car (sx);
+
+            if (truep (equalp (a, sym_configuration)))
+            {
+                struct open_cfg_requests *cur = open_cfg_requests;
+                struct open_cfg_requests **p  = &open_cfg_requests;
+
+                sx = cdr (sx);
+                a  = car (sx);
+                sx = car (cdr (sx));
+
+                while (cur != (void *)0)
+                {
+                    if (truep (equalp (cur->id, a)))
+                    {
+                        struct machine_state *stu =
+                                (struct machine_state *)cur->continuation;
+
+                        *p = cur->next;
+
+                        if (nexp (cur->key))
+                        {
+                            lx_continue
+                                    (lx_make_state (cons (sx, sx_end_of_list),
+                                     stu->environment, stu->code, stu->dump));
+                        }
+                        else
+                        {
+                            lx_continue
+                                    (lx_make_state (cons (lx_environment_lookup
+                                     (sx, cur->key), sx_end_of_list),
+                                     stu->environment, stu->code, stu->dump));
+                        }
+
+                        free_pool_mem (cur);
+                        cur = *p;
+                        continue;
+                    }
+
+                    p   = &(cur->next);
+                    cur = cur->next;
+                }
+            }
+        }
+    }
+}
+
 void initialise_kyu_script_commands ( void )
 {
     static char installed = (char)0;
 
     if (installed == (char)0)
     {
-        multiplex_all_processes ();
         initialise_seteh ();
+        multiplex_kyu ();
+        multiplex_all_processes ();
+
+        multiplex_add_kyu_callback (script_command_callback, (void *)0);
+        configuration_data = lx_make_environment (sx_end_of_list);
+
+        installed = (char)1;
     }
 }
 
@@ -56,7 +129,12 @@ sexpr kyu_sx_default_environment ( void )
                              lx_foreign_mu (sym_run, kyu_sc_run)),
                  cons (cons (sym_keep_alive,
                              lx_foreign_mu (sym_keep_alive, kyu_sc_keep_alive)),
-                       sx_end_of_list)));
+                 cons (cons (sym_get_configuration,
+                             lx_foreign_mu (sym_get_configuration,
+                                            kyu_sc_get_configuration)),
+                 cons (cons (sym_message,
+                             lx_foreign_mu (sym_message, kyu_sc_message)),
+                       sx_end_of_list)))));
     }
 
     return env;
@@ -162,8 +240,9 @@ static struct exec_context *sc_run_x (sexpr sx)
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
 
-            kyu_sd_sx_queue_connect
-                    (sx_open_io (proccontext->in, proccontext->out), (void *)0);
+            multiplex_add_kyu_sexpr
+                    (sx_open_io (proccontext->in, proccontext->out), (void *)0,
+                     (void *)0);
         }
         else
         {
@@ -194,6 +273,7 @@ sexpr kyu_sc_run (sexpr arguments, struct machine_state *state)
     if (eolp (state->stack))
     {
         state->stack = cons(lx_foreign_mu (sym_run, kyu_sc_run), state->stack);
+
         return sx_nonexistent;
     }
     else
@@ -224,6 +304,7 @@ sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state)
     {
         state->stack = cons(lx_foreign_mu (sym_keep_alive, kyu_sc_keep_alive),
                             state->stack);
+
         return sx_nonexistent;
     }
     else
@@ -238,5 +319,62 @@ sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state)
         }
 
         return sx_false;
+    }
+}
+
+sexpr kyu_sc_get_configuration (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_get_configuration,
+                                    kyu_sc_get_configuration),
+                     state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+        struct memory_pool p
+                = MEMORY_POOL_INITIALISER (sizeof (struct open_cfg_requests));
+        struct open_cfg_requests *a = get_pool_mem (&p);
+
+        a->id           = car (arguments);
+        a->key          = car (cdr (arguments));
+        a->continuation = lx_make_state
+                (sx_end_of_list, sx_end_of_list, sx_end_of_list, state->dump);
+        a->next         = open_cfg_requests;
+
+        open_cfg_requests = a;
+
+        kyu_sd_write_to_all_listeners
+                (cons (sym_request, cons (sym_configuration,
+                       cons (a->id, sx_end_of_list))),
+                 (void *)0);
+
+        state->environment = sx_end_of_list;
+        state->stack = sx_end_of_list;
+        state->code = sx_end_of_list;
+        state->dump = sx_end_of_list;
+
+        return sx_nonexistent;
+    }
+}
+
+sexpr kyu_sc_message (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_message, kyu_sc_message), state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+        kyu_sd_write_to_all_listeners
+                (cons (sym_event, cons (sym_message, arguments)), (void *)0);
+
+        return sx_true;
     }
 }
