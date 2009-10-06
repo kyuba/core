@@ -12,7 +12,7 @@
   (keep-alive #f "agetty" "38400" "tty5" "linux")
   (keep-alive #f "agetty" "38400" "tty6" "linux")
 
-  (keep-alive "kyu-server-configuration" "/etc/configuration/.*\\.sx")
+  (keep-alive "kyu-server-configuration" "/etc/kyu/configuration/.*\\.sx")
 
   (keep-alive "ipc-hub")
 
