@@ -44,6 +44,7 @@ define_symbol (sym_once_per_network,     "once-per-network");
 define_symbol (sym_once_per_system,      "once-per-system");
 define_symbol (sym_io_type,              "io-type");
 define_symbol (sym_kyuba_ipc,            "kyuba-ipc");
+define_symbol (sym_none,                 "none");
 define_symbol (sym_active,               "active");
 define_symbol (sym_inactive,             "inactive");
 
@@ -62,6 +63,7 @@ static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
             sexpr binary_name = sx_false;
             sexpr active = sx_false;
             sexpr c;
+            sexpr kyuba_ipc = sx_true;
 
             sx = cdr (sx);
             id = car (sx);
@@ -79,6 +81,10 @@ static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
                     if (truep (equalp (b, sym_binary_name)))
                     {
                         binary_name = cdr (a);
+                    }
+                    else if (truep (equalp (b, sym_io_type)))
+                    {
+                        kyuba_ipc = equalp (sym_kyuba_ipc, cdr (a));
                     }
                 }
                 else if (truep (equalp (a, sym_active)))
@@ -109,8 +115,19 @@ static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
 
             if (truep (active) && stringp (binary_name))
             {
+                sexpr args;
+
+                if (truep (kyuba_ipc))
+                {
+                    args = cons (binary_name, sx_end_of_list);
+                }
+                else
+                {
+                    args = cons (sx_false, cons (binary_name, sx_end_of_list));
+                }
+
                 if (falsep (kyu_sc_keep_alive
-                                (cons (binary_name, sx_end_of_list),
+                                (args,
                                  (struct machine_state *)sx_end_of_list)))
                 {
                     kyu_command
