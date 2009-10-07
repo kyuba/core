@@ -1,4 +1,5 @@
 (server seteh "Seteh Scripting Server"
+  active
   (schedule-limitations once-per-system)
-  (binary-name "kyu-seteh-server")
-  (io-type kyuba-ipc))
+  (binary-name . "kyu-seteh-server")
+  (io-type . kyuba-ipc))

@@ -5,7 +5,7 @@
 */
 
 /*
- * Copyright (c) 2008, 2009, Kyuba Project Members
+ * Copyright (c) 2009, Kyuba Project Members
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,25 @@
 */
 
 #include <curie/main.h>
+#include <curie/multiplex.h>
+#include <curie/memory.h>
+#include <kyuba/ipc.h>
+#include <kyuba/types.h>
+
+static void on_event (sexpr sx, void *aux)
+{
+}
 
 int cmain ()
 {
+    terminate_on_allocation_errors ();
+
+    initialise_kyu_script_commands ();
+    initialise_kyu_types ();
+    multiplex_kyu ();
+    multiplex_add_kyu_stdio (on_event, (void *)0);
+
+    while (multiplex() == mx_ok);
+
     return 0;
 }

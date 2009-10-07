@@ -1,4 +1,5 @@
 (server scheduler "Kyuba Scheduler"
+  active
   (schedule-limitations once-per-network)
-  (binary-name "kyu-scheduler")
-  (io-type kyuba-ipc))
+  (binary-name . "kyu-scheduler")
+  (io-type . kyuba-ipc))

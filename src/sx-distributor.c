@@ -62,6 +62,8 @@ void kyu_sd_write_to_all_listeners (sexpr sx, struct sexpr_io *except)
 
 void kyu_sd_remove_listener (struct sexpr_io *io)
 {
+    define_symbol (sym_client_disconnected, "client-disconnected");
+
     struct socket_list **ll = &sl;
     struct socket_list *c   = sl;
 
@@ -78,6 +80,10 @@ void kyu_sd_remove_listener (struct sexpr_io *io)
         ll = &(sl->next);
         c = c->next;
     }
+
+    kyu_sd_write_to_all_listeners
+            (cons (sym_client_disconnected, sx_end_of_list), io);
+
 }
 
 void kyu_sd_add_listener (struct sexpr_io *io)
@@ -107,11 +113,12 @@ void kyu_sd_sx_queue_read (sexpr sx, struct sexpr_io *io, void *aux)
 
 void kyu_sd_sx_queue_connect (struct sexpr_io *io, void *aux)
 {
-    define_symbol (sym_connected, "connected");
+    define_symbol (sym_client_connected, "client-connected");
 
     kyu_sd_add_listener (io);
 
-    kyu_sd_write_to_all_listeners (cons (sym_connected, sx_end_of_list), io);
+    kyu_sd_write_to_all_listeners
+            (cons (sym_client_connected, sx_end_of_list), io);
 }
 
 void kyu_sd_add_listener_stdio ( void )

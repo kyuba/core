@@ -29,21 +29,170 @@
 #include <curie/main.h>
 #include <curie/multiplex.h>
 #include <curie/memory.h>
+#include <curie/directory.h>
 #include <kyuba/ipc.h>
 #include <kyuba/types.h>
 
-static void on_event (sexpr event, void *aux)
+define_symbol (sym_initialise,           "initialise");
+define_symbol (sym_server_job,           "server-job");
+define_symbol (sym_source,               "source");
+define_symbol (sym_server,               "server");
+define_symbol (sym_binary_not_found,     "binary-not-found");
+define_symbol (sym_schedule_limitations, "schedule-limitations");
+define_symbol (sym_binary_name,          "binary-name");
+define_symbol (sym_once_per_network,     "once-per-network");
+define_symbol (sym_once_per_system,      "once-per-system");
+define_symbol (sym_io_type,              "io-type");
+define_symbol (sym_kyuba_ipc,            "kyuba-ipc");
+define_symbol (sym_active,               "active");
+define_symbol (sym_inactive,             "inactive");
+
+static sexpr global_environment;
+static sexpr binaries;
+
+static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
 {
+    if (consp (sx))
+    {
+        sexpr a = car (sx);
+
+        if (truep (equalp (a, sym_server)))
+        {
+            sexpr id;
+            sexpr binary_name = sx_false;
+            sexpr active = sx_false;
+            sexpr c;
+
+            sx = cdr (sx);
+            id = car (sx);
+            sx = cdr (sx);
+
+            while (consp (sx))
+            {
+                a = car (sx);
+                sx = cdr (sx);
+
+                if (consp (a))
+                {
+                    sexpr b = car (a);
+
+                    if (truep (equalp (b, sym_binary_name)))
+                    {
+                        binary_name = cdr (a);
+                    }
+                }
+                else if (truep (equalp (a, sym_active)))
+                {
+                    active = sx_true;
+                }
+                else if (truep (equalp (a, sym_inactive)))
+                {
+                    active = sx_false;
+                }
+            }
+
+            if (truep (active) && stringp (binary_name))
+            {
+                c = lx_environment_lookup (binaries, id);
+                if (!nexp (c))
+                {
+                    if (truep (equalp (c, binary_name)))
+                    {
+                        active = sx_false;
+                    }
+                    else
+                    {
+                        binaries = lx_environment_unbind (binaries, id);
+                    }
+                }
+            }
+
+            if (truep (active) && stringp (binary_name))
+            {
+                if (falsep (kyu_sc_keep_alive
+                                (cons (binary_name, sx_end_of_list),
+                                 (struct machine_state *)sx_end_of_list)))
+                {
+                    kyu_command
+                            (cons (sym_event,
+                                   cons (sym_error,
+                                         cons (sym_binary_not_found,
+                                               cons (binary_name,
+                                                     sx_end_of_list)))));
+                }
+                else
+                {
+                    binaries = lx_environment_bind (binaries, id, binary_name);
+                }
+            }
+        }
+    }
+}
+
+static void on_event (sexpr sx, void *aux)
+{
+    if (consp (sx))
+    {
+        sexpr a = car (sx);
+
+        if (truep (equalp (a, sym_reply)))
+        {
+            sx = cdr (sx);
+            a  = car (sx);
+
+            if (truep (equalp (a, sym_configuration)))
+            {
+                sx = cdr (sx);
+                a  = car (sx);
+
+                if (truep (equalp (a, sym_server_job)))
+                {
+                    sx = lx_environment_lookup (car (cdr (sx)), sym_source);
+
+                    while (consp (sx))
+                    {
+                        sexpr files = read_directory_sx (car (sx));
+
+                        while (consp (files))
+                        {
+                            sexpr t = car (files);
+                            const char *fname = sx_string (t);
+
+                            multiplex_add_sexpr
+                                    (sx_open_io (io_open_read (fname),
+                                                 io_open_null),
+                                     on_job_file_read, (void *)0);
+
+                            files = cdr (files);
+                        }
+
+                        sx = cdr (sx);
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void read_configuration ()
+{
+    kyu_command (cons (sym_request,
+                       cons (sym_configuration,
+                             cons (sym_server_job, sx_end_of_list))));
 }
 
 int cmain ()
 {
     terminate_on_allocation_errors ();
 
-    initialise_kyu_types ();
-
+    initialise_kyu_script_commands ();
     multiplex_kyu ();
     multiplex_add_kyu_stdio (on_event, (void *)0);
+
+    global_environment = kyu_sx_default_environment ();
+    binaries           = lx_make_environment (sx_end_of_list);
+
+    read_configuration ();
 
     while (multiplex() == mx_ok);
 

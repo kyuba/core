@@ -210,7 +210,7 @@ int cmain ()
         {
             open_script_files++;
             multiplex_add_sexpr
-                    (sx_open_io (io_open_read (curie_argv[i]), io_open (-1)),
+                    (sx_open_io (io_open_read (curie_argv[i]), io_open_null),
                      on_script_read, (void *)0);
         }
     }
