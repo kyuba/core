@@ -5,7 +5,7 @@
 */
 
 /*
- * Copyright (c) 2008, 2009, Kyuba Project Members
+ * Copyright (c) 2009, Kyuba Project Members
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -173,10 +173,9 @@ static void on_event (sexpr sx, void *aux)
                         while (consp (files))
                         {
                             sexpr t = car (files);
-                            const char *fname = sx_string (t);
 
                             multiplex_add_sexpr
-                                    (sx_open_io (io_open_read (fname),
+                                    (sx_open_io (io_open_read (sx_string (t)),
                                                  io_open_null),
                                      on_job_file_read, (void *)0);
 
@@ -203,7 +202,7 @@ int cmain ()
     terminate_on_allocation_errors ();
 
     initialise_kyu_script_commands ();
-    multiplex_kyu ();
+    initialise_kyu_types ();
     multiplex_add_kyu_stdio (on_event, (void *)0);
 
     global_environment = kyu_sx_default_environment ();

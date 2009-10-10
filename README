@@ -1,5 +1,5 @@
 ###- QUICK AND DIRTY: COMPILATION AND INSTALLATION -############################
-  You'll need curie-8, including icemake, and duat-6...
+  You'll need curie-11 including icemake and seteh...
 
     $ icemake -dif /usr
 
@@ -23,7 +23,7 @@ NOTE.2:
 ###- DETAILS -##################################################################
 
 Compilation:
-  Make sure you have libcurie-8 and libduat-6 installed, then:
+  Make sure you have libcurie-11 and libseteh installed, then:
 
     $ icemake
 

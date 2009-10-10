@@ -90,14 +90,14 @@ void multiplex_add_kyu_sexpr
         multiplex_add_kyu_callback (on_event, aux);
     }
 
+    kyu_sd_sx_queue_connect (io, (void *)0);
+
     while (consp (cmdtemp))
     {
         kyu_sd_write_to_all_listeners (car (cmdtemp), (void *)0);
 
         cmdtemp = cdr (cmdtemp);
     }
-
-    kyu_sd_sx_queue_connect (io, (void *)0);
 }
 
 void multiplex_add_kyu_stdio (void (*on_event)(sexpr, void *), void *aux)

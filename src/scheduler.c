@@ -42,7 +42,6 @@ int cmain ()
 
     initialise_kyu_script_commands ();
     initialise_kyu_types ();
-    multiplex_kyu ();
     multiplex_add_kyu_stdio (on_event, (void *)0);
 
     while (multiplex() == mx_ok);
