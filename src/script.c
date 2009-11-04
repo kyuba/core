@@ -101,6 +101,17 @@ static void script_command_callback (sexpr sx, void *aux)
     }
 }
 
+static void global_death_notification (struct exec_context *ctx, void *aux)
+{
+    sexpr rv = (ctx->exitstatus == 0) ? sx_true
+                                      : make_integer (ctx->exitstatus);
+
+    kyu_sd_write_to_all_listeners
+        (cons (sym_process_terminated,
+               cons (make_integer (ctx->pid),
+                     cons (rv, sx_end_of_list))), (void *)0);
+}
+
 void initialise_kyu_script_commands ( void )
 {
     static char installed = (char)0;
@@ -110,6 +121,9 @@ void initialise_kyu_script_commands ( void )
         initialise_seteh ();
         multiplex_kyu ();
         multiplex_all_processes ();
+
+        multiplex_add_process ((struct exec_context *)0,
+                               global_death_notification, (void *)0);
 
         multiplex_add_kyu_callback (script_command_callback, (void *)0);
         configuration_data = lx_make_environment (sx_end_of_list);
@@ -152,11 +166,6 @@ static void on_death (struct exec_context *ctx, void *u)
 
 //    kyu_sd_write_to_all_listeners (nstate, (void *)0);
 
-    kyu_sd_write_to_all_listeners
-            (cons (sym_process_terminated,
-                   cons (make_integer (ctx->pid),
-                         cons (rv, sx_end_of_list))), (void *)0);
-
     free_exec_context (ctx);
 
     lx_continue (nstate);
@@ -164,14 +173,6 @@ static void on_death (struct exec_context *ctx, void *u)
 
 static void on_death_respawn (struct exec_context *ctx, void *u)
 {
-    sexpr rv = (ctx->exitstatus == 0) ? sx_true
-                                      : make_integer (ctx->exitstatus);
-
-    kyu_sd_write_to_all_listeners
-            (cons (sym_process_terminated,
-                   cons (make_integer (ctx->pid),
-                         cons (rv, sx_end_of_list))), (void *)0);
-
     free_exec_context (ctx);
 
 //    kyu_sd_write_to_all_listeners ((sexpr)u, (sexpr)0);

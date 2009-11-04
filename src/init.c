@@ -107,6 +107,17 @@ static void prevent_hissyfits ()
     multiplex_add_io (out, (void*)0, do_nothing, (void *)0);
 }
 
+static void global_death_notification (struct exec_context *ctx, void *aux)
+{
+    sexpr rv = (ctx->exitstatus == 0) ? sx_true
+                                      : make_integer (ctx->exitstatus);
+
+    sx_write (monitorconnection,
+              cons (sym_process_terminated,
+                  cons (make_integer (ctx->pid),
+                        cons (rv, sx_end_of_list))));
+}
+
 int cmain ()
 {
     static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
@@ -131,6 +142,9 @@ int cmain ()
     multiplex_signal();
     multiplex_all_processes();
     multiplex_sexpr();
+
+    multiplex_add_process ((struct exec_context *)0,
+                           global_death_notification, (void *)0);
 
     on_init_death((void *)0, cmd);
 
