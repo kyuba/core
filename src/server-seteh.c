@@ -46,8 +46,21 @@ define_symbol (sym_once_per_system,      "once-per-system");
 define_symbol (sym_io_type,              "io-type");
 define_symbol (sym_kyuba_ipc,            "kyuba-ipc");
 define_symbol (sym_none,                 "none");
-define_symbol (sym_active,               "active");
-define_symbol (sym_inactive,             "inactive");
+
+define_symbol (sym_init_script,          "init-script");
+define_symbol (sym_daemon,               "daemon");
+define_symbol (sym_new_module,           "new-module");
+define_symbol (sym_new_service,          "new-service");
+
+define_symbol (sym_provides,             "provides");
+define_symbol (sym_requires,             "requires");
+define_symbol (sym_before,               "before");
+define_symbol (sym_after,                "after");
+define_symbol (sym_conflicts_with,       "conflicts-with");
+define_symbol (sym_functions,            "functions");
+
+define_symbol (sym_start,                "start");
+define_symbol (sym_stop,                 "stop");
 
 static sexpr global_environment;
 
@@ -56,8 +69,70 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
     if (consp (sx))
     {
         sexpr a = car (sx);
+        char daemon = 0;
 
-        kyu_command (a);
+        if (truep (equalp (sym_init_script, a)) ||
+            (daemon = truep (equalp (sym_daemon, a))))
+        {
+            sexpr name           = sx_nonexistent,
+                  description    = sx_nonexistent,
+                  provides       = sx_end_of_list,
+                  requires       = sx_end_of_list,
+                  before         = sx_end_of_list,
+                  after          = sx_end_of_list,
+                  conflicts      = sx_end_of_list,
+                  schedulerflags = sx_end_of_list,
+                  functions      = sx_end_of_list,
+                  module;
+
+            if (daemon)
+            {
+                functions = cons (sym_stop, cons (sym_start, functions));
+            }
+
+            a = cdr (sx);
+            name        = car (a); a = cdr (a);
+            description = car (a); a = cdr (a);
+
+            while (consp (a))
+            {
+                sexpr v  = car (a);
+                sexpr va = car (v);
+
+                if (truep (equalp (sym_provides, va)))
+                {
+                    provides = cdr (v);
+                }
+                else if (truep (equalp (sym_requires, va)))
+                {
+                    requires = cdr (v);
+                }
+                else if (truep (equalp (sym_conflicts_with, va)))
+                {
+                    conflicts = cdr (v);
+                }
+                else if (truep (equalp (sym_before, va)))
+                {
+                    before = cdr (v);
+                }
+                else if (truep (equalp (sym_after, va)))
+                {
+                    after = cdr (v);
+                }
+                else if (truep (equalp (sym_schedule_limitations, va)))
+                {
+                    schedulerflags = cdr (v);
+                }
+
+                a = cdr (a);
+            }
+
+            module = kyu_make_module
+                    (name, description, provides, requires, before, after,
+                     conflicts, schedulerflags, functions);
+
+            kyu_command (cons (sym_new_module, cons (module, sx_end_of_list)));
+        }
     }
 }
 
