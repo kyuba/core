@@ -175,8 +175,7 @@ static void on_event (sexpr sx, void *aux)
                             sexpr t = car (files);
 
                             multiplex_add_sexpr
-                                    (sx_open_io (io_open_read (sx_string (t)),
-                                                 io_open_null),
+                                    (sx_open_i (io_open_read (sx_string (t))),
                                      on_job_file_read, (void *)0);
 
                             files = cdr (files);

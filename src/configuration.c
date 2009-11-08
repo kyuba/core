@@ -90,7 +90,7 @@ static void read_configuration ()
         {
             sexpr fname = car (files);
             const char *n = sx_string (fname);
-            struct sexpr_io *io = sx_open_io (io_open_read(n), io_open_null);
+            struct sexpr_io *io = sx_open_i (io_open_read(n));
 
             multiplex_add_sexpr (io, on_configuration_read, (void *)0);
 
