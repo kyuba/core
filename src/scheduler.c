@@ -77,7 +77,7 @@ static void on_event (sexpr sx, void *aux)
                 if (kmodulep (a))
                 {
                     sexpr ts, ts_name, ts_description, ts_location,
-                          ts_schedulerflags, ts_modules, ts_services;
+                          ts_schedulerflags, ts_modules, ts_services, c;
 
                     name = ((struct kyu_module *)a)->name;
 
@@ -103,12 +103,23 @@ static void on_event (sexpr sx, void *aux)
                         ts_description    = sx_nil;
                         ts_location       = sx_nil;
                         ts_schedulerflags = sx_nil;
-                        ts_modules  = lx_make_environment (sx_end_of_list);
-                        ts_services = lx_make_environment (sx_end_of_list);
+                        ts_modules        = sx_end_of_list;
+                        ts_services       = sx_end_of_list;
                     }
 
-                    ts_modules = lx_environment_unbind (ts_modules, name);
-                    ts_modules = lx_environment_bind (ts_modules, name, a);
+                    c = ts_modules;
+                    ts_modules = cons (a, sx_end_of_list);
+                    while (consp (c))
+                    {
+                        sexpr m = car (c);
+                        if (falsep (equalp (((struct kyu_module *)m)->name,
+                                            name)))
+                        {
+                            ts_modules = cons (m, ts_modules);
+                        }
+
+                        c = cdr (c);
+                    }
 
                     ts = kyu_make_system
                             (ts_name, ts_description, ts_location,
