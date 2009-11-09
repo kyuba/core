@@ -36,6 +36,25 @@ define_symbol (sym_update, "update");
 
 static sexpr system_data;
 
+/* the module list is taken as the primary listing, so this function is
+   supposed to update the list of services using the dependency information
+   from the list of modules.
+   as per the original spec file, each system gets their own namespace, so we
+   need to run through the list of systems to get at all modules */
+static void update_services ( void )
+{
+    sexpr c = lx_environment_alist (system_data);
+
+    while (consp (c))
+    {
+        sexpr a = car (c), aa = car (a), ad = cdr (a);
+
+
+        c = cdr (c);
+    }
+    /* TODO: update services here */
+}
+
 static void on_event (sexpr sx, void *aux)
 {
     if (consp (sx))
@@ -91,14 +110,16 @@ static void on_event (sexpr sx, void *aux)
                     ts_modules = lx_environment_unbind (ts_modules, name);
                     ts_modules = lx_environment_bind (ts_modules, name, a);
 
-                    /* TODO: update services here */
-
                     ts = kyu_make_system
                             (ts_name, ts_description, ts_location,
                              ts_schedulerflags, ts_modules, ts_services);
 
                     system_data = lx_environment_bind
                             (system_data, target_system, ts);
+
+                    update_services();
+
+                    ts = lx_environment_lookup (system_data, target_system);
 
                     kyu_command (cons (sym_update, cons (ts, sx_end_of_list)));
                 }
