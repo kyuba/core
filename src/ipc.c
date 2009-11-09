@@ -31,6 +31,9 @@
 #include <curie/network.h>
 #include <kyuba/ipc.h>
 
+sexpr native_system            = sx_nil;
+sexpr programme_identification = sx_nil;
+
 struct kaux
 {
     void       (*on_event)(sexpr, void *);
@@ -44,6 +47,22 @@ static sexpr cmdtemp = sx_end_of_list;
 static void on_ipc_read (sexpr sx)
 {
     struct kaux *c = auxlist;
+
+    if (consp (sx))
+    {
+        sexpr a = car (sx);
+
+        if (truep (equalp (sym_native_system, a)))
+        {
+            native_system = cdr (sx);
+            return;
+        }
+        else if (truep (equalp (sym_statusp, a)))
+        {
+            kyu_command (cons (sym_status, cons (native_system, cons
+                           (programme_identification, sx_end_of_list))));
+        }
+    }
 
     while (c != (struct kaux *)0)
     {

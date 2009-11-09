@@ -52,6 +52,12 @@ void  kyu_disconnect               ();
 sexpr kyu_get_configuration_all    (sexpr id);
 sexpr kyu_get_configuration        (sexpr id, sexpr key);
 
+/*! \brief The "native" System of the currently running Process
+ */
+extern sexpr native_system;
+
+extern sexpr programme_identification;
+
 #ifdef __cplusplus
 }
 #endif

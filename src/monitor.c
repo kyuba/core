@@ -167,9 +167,12 @@ static void on_ipc_read (sexpr sx, void *aux)
 
 int cmain ()
 {
+    define_symbol (sym_monitor, "monitor");
     int i;
 
     terminate_on_allocation_errors();
+
+    programme_identification = cons (sym_monitor, make_integer (2));
 
 #if defined(have_sys_setsid)
     sys_setsid();
@@ -206,12 +209,16 @@ int cmain ()
     {
         sexpr n = make_string (curie_argv[i]);
 
-        if (filep(n))
+        if (truep(filep(n)))
         {
             open_script_files++;
             multiplex_add_sexpr
                     (sx_open_i (io_open_read (curie_argv[i])),
                      on_script_read, (void *)0);
+        }
+        else
+        {
+            native_system = make_symbol (curie_argv[i]);
         }
     }
 

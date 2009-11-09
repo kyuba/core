@@ -237,12 +237,15 @@ static struct exec_context *sc_run_x (sexpr sx)
 
         if (do_io == (char)1)
         {
+            struct sexpr_io *io;
+
             proccontext
                     = execute(EXEC_CALL_PURGE | EXEC_CALL_CREATE_SESSION,
                               x, curie_environment);
 
-            kyu_sd_add_listener
-                    (sx_open_io (proccontext->in, proccontext->out));
+            io = sx_open_io (proccontext->in, proccontext->out);
+            sx_write (io, cons (sym_native_system, native_system));
+            kyu_sd_add_listener (io);
         }
         else
         {

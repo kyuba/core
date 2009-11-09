@@ -49,8 +49,7 @@ define_symbol (sym_none,                 "none");
 
 define_symbol (sym_init_script,          "init-script");
 define_symbol (sym_daemon,               "daemon");
-define_symbol (sym_new_module,           "new-module");
-define_symbol (sym_new_service,          "new-service");
+define_symbol (sym_update,               "update");
 
 define_symbol (sym_provides,             "provides");
 define_symbol (sym_requires,             "requires");
@@ -131,7 +130,8 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
                     (name, description, provides, requires, before, after,
                      conflicts, schedulerflags, functions);
 
-            kyu_command (cons (sym_new_module, cons (module, sx_end_of_list)));
+            kyu_command (cons (sym_update, cons (native_system,
+                         cons (module, sx_end_of_list))));
         }
     }
 }
@@ -189,6 +189,8 @@ static void read_configuration ()
 int cmain ()
 {
     terminate_on_allocation_errors ();
+
+    programme_identification = cons (sym_server_seteh, make_integer (1));
 
     initialise_kyu_script_commands ();
     initialise_kyu_types ();

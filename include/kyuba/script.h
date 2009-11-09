@@ -57,6 +57,9 @@ define_symbol (sym_configuration,      "configuration");
 define_symbol (sym_message,            "message");
 define_symbol (sym_request,            "request");
 define_symbol (sym_reply,              "reply");
+define_symbol (sym_native_system,      "native-system");
+define_symbol (sym_statusp,            "status?");
+define_symbol (sym_status,             "status");
 
 void initialise_kyu_script_commands ( void );
 

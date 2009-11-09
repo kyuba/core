@@ -120,7 +120,8 @@ static void global_death_notification (struct exec_context *ctx, void *aux)
 
 int cmain ()
 {
-    static const char *cmd[] = { (char *)0, "/etc/kyu/init.sx", (char *)0 };
+    static const char *cmd[] =
+            { (char *)0, "/etc/kyu/init.sx", "local", (char *)0 };
     define_string (str_monitor, "monitor");
 
     sexpr mbinary = sx_false;

@@ -200,6 +200,8 @@ int cmain ()
 {
     terminate_on_allocation_errors ();
 
+    programme_identification = cons (sym_server_job, make_integer (1));
+
     initialise_kyu_script_commands ();
     initialise_kyu_types ();
     multiplex_add_kyu_stdio (on_event, (void *)0);
