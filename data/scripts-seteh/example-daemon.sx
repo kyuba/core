@@ -1,5 +1,5 @@
 (daemon d-example "Example Daemon"
-  (provides "http-server")
+  (provides "http-server" "example")
   (after "fs-.*")
   (before "example")
   (conflicts-with d-apache)

@@ -43,12 +43,112 @@ static sexpr system_data;
    need to run through the list of systems to get at all modules */
 static void update_services ( void )
 {
+    define_string (sym_c_s, ", ");
     sexpr c = lx_environment_alist (system_data);
+    system_data = lx_make_environment (sx_end_of_list);
 
     while (consp (c))
     {
-        sexpr a = car (c), aa = car (a), ad = cdr (a);
+        sexpr a = car (c), sysname = car (a), sys = cdr (a);
+        struct kyu_system *s = (struct kyu_system *)sys;
+        sexpr services = sx_end_of_list, mo = s->modules;
 
+        while (consp (mo))
+        {
+            sexpr s_mo = car (mo);
+            struct kyu_module *m = (struct kyu_module *)s_mo;
+            sexpr p = m->provides;
+
+            while (consp (p))
+            {
+                sexpr sm = car (p);
+
+                if (stringp (sm))
+                {
+                    sexpr sc = services, nservices = sx_end_of_list;
+                    char have_service = (char)0;
+
+                    while (consp (sc))
+                    {
+                        sexpr s_se = car (sc);
+                        struct kyu_service *sv = (struct kyu_service *)s_se;
+
+                        if ((have_service == (char)0) &&
+                            truep (equalp (sm, sv->name)))
+                        {
+                            sexpr desc = sv->description,
+                                  flags = sv->schedulerflags,
+                                  mods = sv->modules,
+                                  f = m->schedulerflags;
+
+                            if (falsep (equalp (desc, m->description)))
+                            {
+                                desc = sx_join (desc, sym_c_s, m->description);
+                            }
+
+                            while (consp (f))
+                            {
+                                sexpr fa = car (f), fc = flags;
+                                char fh = (char)0;
+
+                                while (consp (fc))
+                                {
+                                    sexpr fca = car (fc);
+
+                                    if (truep (equalp (fc, fca)))
+                                    {
+                                        fh = (char)1;
+                                    }
+
+                                    fc = cdr (fc);
+                                }
+
+                                if (fh == (char)0)
+                                {
+                                    flags = cons (fa, flags);
+                                }
+
+                                f = cdr (f);
+                            }
+
+                            mods = cons (s_se, mods);
+
+                            nservices = cons
+                                (kyu_make_service (sm, desc, flags, mods),
+                                 nservices);
+
+                            have_service = (char)1;
+                        }
+                        else
+                        {
+                            nservices = cons (s_se, nservices);
+                        }
+
+                        sc = cdr (sc);
+                    }
+
+                    services = nservices;
+
+                    if (have_service == (char)0)
+                    {
+                        services = cons
+                            (kyu_make_service (sm, m->description,
+                                               m->schedulerflags,
+                                               cons (s_mo, sx_end_of_list)),
+                             services);
+                    }
+                }
+
+                p = cdr (p);
+            }
+
+            mo = cdr (mo);
+        }
+
+        system_data = lx_environment_bind
+                (system_data, sysname,
+                 kyu_make_system (sysname, s->description, s->location,
+                                  s->schedulerflags, s->modules, services));
 
         c = cdr (c);
     }
