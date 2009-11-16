@@ -32,9 +32,13 @@
 #include <kyuba/ipc.h>
 #include <kyuba/types.h>
 
-define_symbol (sym_update, "update");
+define_symbol (sym_update,               "update");
+define_symbol (sym_initialising,         "initialising");
+define_symbol (sym_initialised,          "initialised");
+define_symbol (sym_get_scheduler_data,   "get-scheduler-data");
 
 static sexpr system_data;
+static int currently_initialising = 0;
 
 /* the module list is taken as the primary listing, so this function is
    supposed to update the list of services using the dependency information
@@ -152,7 +156,20 @@ static void update_services ( void )
 
         c = cdr (c);
     }
-    /* TODO: update services here */
+}
+
+static void print_scheduler_data ()
+{
+    sexpr sys = lx_environment_alist (system_data);
+
+    while (consp (sys))
+    {
+        sexpr sc = car (sys), sd = cdr (sc);
+
+        kyu_command (cons (sym_update, cons (sd, sx_end_of_list)));
+
+        sys = cdr (sys);
+    }
 }
 
 static void on_event (sexpr sx, void *aux)
@@ -227,12 +244,6 @@ static void on_event (sexpr sx, void *aux)
 
                     system_data = lx_environment_bind
                             (system_data, target_system, ts);
-
-                    update_services();
-
-                    ts = lx_environment_lookup (system_data, target_system);
-
-                    kyu_command (cons (sym_update, cons (ts, sx_end_of_list)));
                 }
             }
             else if (ksystemp (a))
@@ -242,6 +253,27 @@ static void on_event (sexpr sx, void *aux)
                 system_data = lx_environment_unbind (system_data, name);
                 system_data = lx_environment_bind   (system_data, name, a);
             }
+        }
+        else if (truep (equalp (a, sym_initialising)))
+        {
+            currently_initialising++;
+        }
+        else if (truep (equalp (a, sym_initialised)))
+        {
+            if (currently_initialising > 0)
+            {
+                currently_initialising--;
+            }
+
+            if (currently_initialising == 0)
+            {
+                update_services();
+                print_scheduler_data ();
+            }
+        }
+        else if (truep (equalp (a, sym_get_scheduler_data)))
+        {
+            print_scheduler_data ();
         }
     }
 }

@@ -61,7 +61,11 @@ define_symbol (sym_functions,            "functions");
 define_symbol (sym_start,                "start");
 define_symbol (sym_stop,                 "stop");
 
+define_symbol (sym_initialising,         "initialising");
+define_symbol (sym_initialised,          "initialised");
+
 static sexpr global_environment;
+static int open_config_files = 0;
 
 static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
 {
@@ -134,6 +138,15 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
                          cons (module, sx_end_of_list))));
         }
     }
+    else if (eofp (sx))
+    {
+        open_config_files--;
+        if (open_config_files == 0)
+        {
+            kyu_command (cons (sym_initialised,
+                         cons (sym_server_seteh, sx_end_of_list)));
+        }
+    }
 }
 
 static void on_event (sexpr sx, void *aux)
@@ -154,6 +167,9 @@ static void on_event (sexpr sx, void *aux)
 
                 if (truep (equalp (a, sym_server_seteh)))
                 {
+                    kyu_command (cons (sym_initialising,
+                                 cons (sym_server_seteh, sx_end_of_list)));
+
                     sx = lx_environment_lookup (car (cdr (sx)), sym_source);
 
                     while (consp (sx))
@@ -164,6 +180,8 @@ static void on_event (sexpr sx, void *aux)
                         {
                             sexpr t = car (files);
 
+                            open_config_files++;
+
                             multiplex_add_sexpr
                                     (sx_open_i (io_open_read (sx_string (t))),
                                      on_script_file_read, (void *)0);
@@ -172,6 +190,12 @@ static void on_event (sexpr sx, void *aux)
                         }
 
                         sx = cdr (sx);
+                    }
+
+                    if (open_config_files == 0)
+                    {
+                        kyu_command (cons (sym_initialised,
+                                     cons (sym_server_seteh, sx_end_of_list)));
                     }
                 }
             }

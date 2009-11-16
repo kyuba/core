@@ -47,9 +47,12 @@ define_symbol (sym_kyuba_ipc,            "kyuba-ipc");
 define_symbol (sym_none,                 "none");
 define_symbol (sym_active,               "active");
 define_symbol (sym_inactive,             "inactive");
+define_symbol (sym_initialising,         "initialising");
+define_symbol (sym_initialised,          "initialised");
 
 static sexpr global_environment;
 static sexpr binaries;
+static int open_config_files = 0;
 
 static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
 {
@@ -144,6 +147,15 @@ static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
             }
         }
     }
+    else if (eofp (sx))
+    {
+        open_config_files--;
+        if (open_config_files == 0)
+        {
+            kyu_command (cons (sym_initialised,
+                         cons (sym_server_job, sx_end_of_list)));
+        }
+    }
 }
 
 static void on_event (sexpr sx, void *aux)
@@ -164,6 +176,9 @@ static void on_event (sexpr sx, void *aux)
 
                 if (truep (equalp (a, sym_server_job)))
                 {
+                    kyu_command (cons (sym_initialising,
+                                 cons (sym_server_job, sx_end_of_list)));
+
                     sx = lx_environment_lookup (car (cdr (sx)), sym_source);
 
                     while (consp (sx))
@@ -174,6 +189,8 @@ static void on_event (sexpr sx, void *aux)
                         {
                             sexpr t = car (files);
 
+                            open_config_files++;
+
                             multiplex_add_sexpr
                                     (sx_open_i (io_open_read (sx_string (t))),
                                      on_job_file_read, (void *)0);
@@ -182,6 +199,12 @@ static void on_event (sexpr sx, void *aux)
                         }
 
                         sx = cdr (sx);
+                    }
+
+                    if (open_config_files == 0)
+                    {
+                        kyu_command (cons (sym_initialised,
+                                     cons (sym_server_job, sx_end_of_list)));
                     }
                 }
             }
