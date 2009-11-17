@@ -1,0 +1,34 @@
+;;
+; This is the modes file for kyuba. The format is fairly straightforward: each
+; element that is bound to the modes is a list like this:
+;
+;   (mode-name (specification ...) ...)
+;
+; mode-name is, as implied, the name of the mode. This needs to be a symbol.
+; The (specification ...) elements may be one of these:
+;
+;   (enable ...)     -- each element of the list describes something to enable
+;                       upon entering the mode.
+;   (disable ...)    -- analoguous to enable, but this disables things
+;   (merge-with ...) -- used to merge two or more modes, or rather this merges
+;                       their specifications with the current mode.
+;   (...)            -- anything that isnt recognised is passed to the IPC
+;                       connection after the mode has been reached.
+;;
+
+(bind modes
+  (boot                 ; boot mode -- more of an example, really
+    (enable "fs-.*"))   ; basically this means "mount all filesystems"; note
+                        ; that regular expressions are allowed for everything.
+
+  (default              ; default mode -- gets switched to on boot
+    (merge-with boot)   ; merge in everything "boot" does.
+    (enable "example")) ; also enable the "example" service
+
+  (power-reset
+    (disable ".*")      ; disable everything, note the regex syntax...
+    (power-reset))      ; passed to the IPC connection once everything is down
+
+  (power-down           ; analoguous to power-reset
+    (disable ".*")
+    (power-down)))
