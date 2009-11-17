@@ -120,3 +120,16 @@
 
   (documentation
         "last-rites"))
+
+;
+; -- libc programmes --
+;
+
+(programme "kyu-bootchart" libc
+  (name "kyu-bootchart")
+  (description "Kyuba Bootchart Programme")
+  (version "1")
+
+  (libraries "curie" "seteh" "kyuba")
+
+  (code "bootchart"))
