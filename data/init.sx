@@ -1,3 +1,7 @@
+;;
+; vim:ft=lisp
+;;
+
 (on-event power-on
   (run "rc" "sysinit")
 

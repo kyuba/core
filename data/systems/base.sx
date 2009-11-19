@@ -1,3 +1,7 @@
+;;
+; vim:ft=lisp
+;;
+
 (system base "Base System"
   (system-type chroot)
   (base-mount-point "/system/base"))

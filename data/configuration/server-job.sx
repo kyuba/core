@@ -1,2 +1,6 @@
+;;
+; vim:ft=lisp
+;;
+
 (bind server-job
   (source "data/jobs/.*\\.sx"))

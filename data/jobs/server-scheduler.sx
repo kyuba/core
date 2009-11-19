@@ -1,3 +1,7 @@
+;;
+; vim:ft=lisp
+;;
+
 (server scheduler "Kyuba Scheduler"
   active
   (schedule-limitations once-per-network)

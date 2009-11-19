@@ -1,3 +1,7 @@
+;;
+; vim:ft=lisp
+;;
+
 (init-script s-example "Example Init Script"
   (provides "example")
   (after "fs-.*")

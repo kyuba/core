@@ -1,2 +1,6 @@
+;;
+; vim:ft=lisp
+;;
+
 (bind server-seteh
   (source "data/scripts-seteh/.*\\.sx"))

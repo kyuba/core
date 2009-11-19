@@ -1,4 +1,6 @@
 ;;
+; vim:ft=lisp
+;
 ; This is the modes file for kyuba. The format is fairly straightforward: each
 ; element that is bound to the modes is a list like this:
 ;
