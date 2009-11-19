@@ -29,6 +29,7 @@
 #include <curie/main.h>
 #include <curie/multiplex.h>
 #include <curie/memory.h>
+#include <curie/regex.h>
 #include <kyuba/ipc.h>
 #include <kyuba/types.h>
 
@@ -43,8 +44,12 @@ define_symbol (sym_initialising,         "initialising");
 define_symbol (sym_initialised,          "initialised");
 define_symbol (sym_get_scheduler_data,   "get-scheduler-data");
 define_symbol (sym_default,              "default");
-define_symbol (sym_no_data_for_mode,     "no-data-for-mode");
+define_symbol (sym_missing_mode_data,    "missing-mode-data");
 define_symbol (sym_reevaluating_mode,    "reevaluating-mode");
+define_symbol (sym_enable,               "enable");
+define_symbol (sym_disable,              "disable");
+define_symbol (sym_merge,                "merge");
+define_symbol (sym_mode_data,            "mode-data");
 
 static sexpr system_data,
              current_mode         = sx_nonexistent,
@@ -187,9 +192,122 @@ static void print_scheduler_data ( void )
     }
 }
 
+static void merge_mode (sexpr mode);
+
+static sexpr merge_lists (sexpr a, sexpr b)
+{
+    sexpr r = a;
+
+    while (consp (b))
+    {
+        sexpr v = car (b), c = r;
+        char have_item = (char)0;
+
+        while (consp (c))
+        {
+            sexpr va = car (c);
+
+            if (truep (equalp (v, va)))
+            {
+                have_item = (char)1;
+                break;
+            }
+
+            c = cdr (c);
+        }
+
+        if (have_item == (char)0)
+        {
+            r = cons (v, r);
+        }
+
+        b = cdr (b);
+    }
+
+    return r;
+}
+
+static void merge_mode_data (sexpr mo)
+{
+    while (consp (mo))
+    {
+        sexpr a = car (mo), aa = car (a);
+
+        if (truep (equalp (aa, sym_merge)))
+        {
+            a = cdr (a);
+
+            while (consp (a))
+            {
+                merge_mode (car (a));
+
+                a = cdr (a);
+            }
+        }
+        else if (truep (equalp (aa, sym_enable)))
+        {
+            target_mode_enable  = merge_lists (target_mode_enable, cdr (a));
+        }
+        else if (truep (equalp (aa, sym_disable)))
+        {
+            target_mode_disable = merge_lists (target_mode_disable, cdr (a));
+        }
+        else
+        {
+            target_mode_ipc     = merge_lists (target_mode_ipc, cdr (a));
+        }
+
+        mo = cdr (mo);
+    }
+}
+
+static void merge_mode (sexpr mode)
+{
+    sexpr mo = lx_environment_lookup (mode_specifications, mode);
+
+    if (consp (mo))
+    {
+        merge_mode_data (mo);
+    }
+}
+
+static sexpr compile_list (sexpr l)
+{
+    sexpr r = sx_end_of_list;
+
+    while (consp (l))
+    {
+        sexpr la = car (l);
+
+        r = cons (rx_compile_sx (la), r);
+
+        l = cdr (l);
+    }
+
+    return r;
+}
+
+/* look up the target mode and merge all enable/disable/ipc data */
 static void rebuild_target_data ( void )
 {
-    /* TODO: look up the target mode and merge all enable/disable/ipc data */
+    sexpr mo = lx_environment_lookup (mode_specifications, target_mode);
+
+    if (consp (mo))
+    {
+        target_mode_enable  = sx_end_of_list;
+        target_mode_disable = sx_end_of_list;
+        target_mode_ipc     = sx_end_of_list;
+
+        merge_mode_data (mo);
+    }
+    else
+    {
+        kyu_command (cons (sym_error, cons (sym_missing_mode_data,
+                     cons (target_mode, sx_end_of_list))));
+    }
+
+    target_mode_enable  = compile_list (target_mode_enable);
+    target_mode_disable = compile_list (target_mode_disable);
 }
 
 static void reevaluate_target_data ( void )
@@ -198,6 +316,13 @@ static void reevaluate_target_data ( void )
                        cons (target_mode, sx_end_of_list)));
 
     rebuild_target_data ();
+
+    /* this is debug and will get ditched once it's stable: */
+
+    kyu_command (cons (sym_mode_data,
+                       cons (target_mode_enable,
+                             cons (target_mode_disable,
+                                   cons (target_mode_ipc, sx_end_of_list)))));
 
     /* TODO: do actual mode switching here */
 
@@ -214,6 +339,7 @@ static void switch_mode (sexpr mode)
     reevaluate_target_data ();
 }
 
+/* IPC entry point */
 static void on_event (sexpr sx, void *aux)
 {
     if (consp (sx))

@@ -12,7 +12,7 @@
 ;   (enable ...)     -- each element of the list describes something to enable
 ;                       upon entering the mode.
 ;   (disable ...)    -- analoguous to enable, but this disables things
-;   (merge-with ...) -- used to merge two or more modes, or rather this merges
+;   (merge ...)      -- used to merge two or more modes, or rather this merges
 ;                       their specifications with the current mode.
 ;   (...)            -- anything that isnt recognised is passed to the IPC
 ;                       connection after the mode has been reached.
@@ -24,7 +24,7 @@
                         ; that regular expressions are allowed for everything.
 
   (default              ; default mode -- gets switched to on boot
-    (merge-with boot)   ; merge in everything "boot" does.
+    (merge boot)        ; merge in everything "boot" does.
     (enable "example")) ; also enable the "example" service
 
   (power-reset
