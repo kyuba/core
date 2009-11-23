@@ -50,6 +50,14 @@ define_symbol (sym_enable,               "enable");
 define_symbol (sym_disable,              "disable");
 define_symbol (sym_merge,                "merge");
 define_symbol (sym_mode_data,            "mode-data");
+define_symbol (sym_enable,               "enable");
+define_symbol (sym_disable,              "disable");
+define_symbol (sym_enabling,             "enabling");
+define_symbol (sym_disabling,            "disabling");
+define_symbol (sym_start,                "start");
+define_symbol (sym_stop,                 "stop");
+define_symbol (sym_starting,             "starting");
+define_symbol (sym_stopping,             "stopping");
 
 static sexpr system_data,
              current_mode         = sx_nonexistent,
@@ -59,6 +67,31 @@ static sexpr system_data,
              target_mode_ipc      = sx_end_of_list,
              mode_specifications  = sx_nonexistent;
 static int currently_initialising = 0;
+
+static void update_module_state (sexpr system, sexpr module, sexpr state)
+{
+}
+
+static void update_service_state (sexpr system, sexpr service, sexpr state)
+{
+}
+
+static sexpr system_module_action (sexpr system, sexpr module, sexpr action)
+{
+}
+
+static sexpr system_service_action (sexpr system, sexpr service, sexpr action)
+{
+    sexpr c = lx_environment_lookup (system_data, system),
+          rv = sx_true;
+
+    if (nexp (c))
+    {
+        return sx_false;
+    }
+
+    return rv;
+}
 
 /* the module list is taken as the primary listing, so this function is
    supposed to update the list of services using the dependency information
