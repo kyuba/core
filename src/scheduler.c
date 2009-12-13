@@ -65,6 +65,7 @@ static sexpr system_data,
 static int currently_initialising = 0;
 
 static void merge_mode (sexpr mode);
+static sexpr merge_lists (sexpr a, sexpr b);
 
 static void update_module_state (sexpr system, sexpr module, sexpr state)
 {
@@ -95,6 +96,20 @@ static sexpr system_service_action (sexpr system, sexpr service, sexpr action)
     return rv;
 }
 
+static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
+{
+    sexpr rv = sx_end_of_list;
+#warning reschedule_get_enable() is not yet implemented!
+    return rv;
+}
+
+/* note to self: unresolved services are meaningless when disabling... */
+static sexpr reschedule_get_disable (sexpr sx)
+{
+#warning reschedule_get_disable() is not yet implemented!
+    return sx;
+}
+
 /* this function should gather a list of services whose status should get
  * modified according to the mode we're currently switching to.
  *
@@ -114,6 +129,11 @@ static sexpr system_service_action (sexpr system, sexpr service, sexpr action)
  */
 static void reschedule ( void )
 {
+    sexpr enable_unresolved,
+          to_enable = reschedule_get_enable
+              (target_mode_enable, &enable_unresolved),
+          to_disable = reschedule_get_disable
+              (target_mode_disable);
 #warning reschedule() is not yet implemented!
 }
 
@@ -334,7 +354,7 @@ static sexpr compile_list (sexpr l)
     {
         sexpr la = car (l);
 
-        r = cons (rx_compile_sx (la), r);
+        r = cons (la, r);
 
         l = cdr (l);
     }
@@ -379,7 +399,7 @@ static void reevaluate_target_data ( void )
                              cons (target_mode_disable,
                                    cons (target_mode_ipc, sx_end_of_list)))));
 
-    /* TODO: do actual mode switching here */
+    reschedule ();
 
     /* TODO: send this once the new mode is active: */
 /*    current_mode = mode;
