@@ -50,14 +50,10 @@ define_symbol (sym_enable,               "enable");
 define_symbol (sym_disable,              "disable");
 define_symbol (sym_merge,                "merge");
 define_symbol (sym_mode_data,            "mode-data");
-define_symbol (sym_enable,               "enable");
-define_symbol (sym_disable,              "disable");
+define_symbol (sym_enabled,              "enabled");
+define_symbol (sym_disabled,             "disabled");
 define_symbol (sym_enabling,             "enabling");
 define_symbol (sym_disabling,            "disabling");
-define_symbol (sym_start,                "start");
-define_symbol (sym_stop,                 "stop");
-define_symbol (sym_starting,             "starting");
-define_symbol (sym_stopping,             "stopping");
 
 static sexpr system_data,
              current_mode         = sx_nonexistent,
@@ -68,20 +64,26 @@ static sexpr system_data,
              mode_specifications  = sx_nonexistent;
 static int currently_initialising = 0;
 
+static void merge_mode (sexpr mode);
+
 static void update_module_state (sexpr system, sexpr module, sexpr state)
 {
+#warning update_module_state() is not yet implemented!
 }
 
 static void update_service_state (sexpr system, sexpr service, sexpr state)
 {
+#warning update_service_state() is not yet implemented!
 }
 
 static sexpr system_module_action (sexpr system, sexpr module, sexpr action)
 {
+#warning update_service_state() is not yet implemented!
 }
 
 static sexpr system_service_action (sexpr system, sexpr service, sexpr action)
 {
+#warning system_service_action() is not yet implemented!
     sexpr c = lx_environment_lookup (system_data, system),
           rv = sx_true;
 
@@ -93,11 +95,33 @@ static sexpr system_service_action (sexpr system, sexpr service, sexpr action)
     return rv;
 }
 
+/* this function should gather a list of services whose status should get
+ * modified according to the mode we're currently switching to.
+ *
+ * the algorithm is roughly as follows: start with each of the two primary lists
+ * (target_mode_enable, and target_mode_disable), and put all services and
+ * modules those match into separate lists. then merge all the requirements of
+ * those items in, and recurse until no further changes occur. after that, sort
+ * the two lists indivually according to the requirements, as well as before/
+ * after attributes, until again no further changes occur. finally, enable the
+ * first batch of items in the list of items that need to get enabled, that is
+ * all of those that have no further requirements (or other constraints).
+ * (disabling ought to work analoguous)
+ *
+ * whenever any of the modules or services changes state, this function gets
+ * called again, which should enable both proper enabling and disabling
+ * throughout.
+ */
+static void reschedule ( void )
+{
+#warning reschedule() is not yet implemented!
+}
+
 /* the module list is taken as the primary listing, so this function is
-   supposed to update the list of services using the dependency information
-   from the list of modules.
-   as per the original spec file, each system gets their own namespace, so we
-   need to run through the list of systems to get at all modules */
+ * supposed to update the list of services using the dependency information
+ * from the list of modules.
+ * as per the original spec file, each system gets their own namespace, so we
+ * need to run through the list of systems to get at all modules */
 static void update_services ( void )
 {
     define_string (sym_c_s, ", ");
@@ -224,8 +248,6 @@ static void print_scheduler_data ( void )
         sys = cdr (sys);
     }
 }
-
-static void merge_mode (sexpr mode);
 
 static sexpr merge_lists (sexpr a, sexpr b)
 {
