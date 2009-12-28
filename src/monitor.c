@@ -170,8 +170,6 @@ int cmain ()
     define_symbol (sym_monitor, "monitor");
     int i;
 
-    terminate_on_allocation_errors();
-
     programme_identification = cons (sym_monitor, make_integer (2));
 
 #if defined(have_sys_setsid)

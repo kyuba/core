@@ -78,8 +78,6 @@ int cmain()
 {
     char cmd = (char)0;
 
-    terminate_on_allocation_errors();
-
     multiplex_kyu ();
 
     for (int i = 1; curie_argv[i] != (char *)0; i++)

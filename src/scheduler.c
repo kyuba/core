@@ -562,8 +562,6 @@ static void read_configuration ()
 
 int cmain ()
 {
-    terminate_on_allocation_errors ();
-
     programme_identification = cons (sym_scheduler, make_integer (1));
 
     system_data = lx_make_environment (sx_end_of_list);

@@ -221,8 +221,6 @@ static void read_configuration ()
 
 int cmain ()
 {
-    terminate_on_allocation_errors ();
-
     programme_identification = cons (sym_server_job, make_integer (1));
 
     initialise_kyu_script_commands ();

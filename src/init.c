@@ -126,8 +126,6 @@ int cmain ()
 
     sexpr mbinary = sx_false;
 
-    terminate_on_allocation_errors();
-
 #if defined(have_sys_setsid)
     sys_setsid();
 #endif

@@ -105,8 +105,6 @@ int cmain ()
 {
     define_symbol (sym_server_configuration, "server-configuration");
 
-    terminate_on_allocation_errors();
-
     programme_identification =
             cons (sym_server_configuration, make_integer (1));
 

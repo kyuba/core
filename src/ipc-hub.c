@@ -38,8 +38,6 @@ int cmain()
     define_symbol (sym_ipc_hub, "ipc-hub");
     char *socket = KYU_IPC_SOCKET;
 
-    terminate_on_allocation_errors();
-
     programme_identification = cons (sym_ipc_hub, make_integer (2));
 
     if (curie_argv[1] != (char *)0)
