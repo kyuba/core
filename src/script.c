@@ -31,7 +31,7 @@
 #include <curie/multiplex.h>
 #include <curie/memory.h>
 
-#include <curie/shell.h>
+#include <sievert/shell.h>
 #include <kyuba/ipc.h>
 
 struct open_cfg_requests

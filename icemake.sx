@@ -4,6 +4,8 @@
   (version "2")
   (url "http://kyuba.org/")
 
+  (libraries "sievert")
+
   (code "script" "ipc" "sx-distributor" "types")
 
   (headers
@@ -16,7 +18,7 @@
   (description "Kyuba generic monitor programme")
   (version "2")
 
-  (libraries "kyuba" "syscall" "seteh")
+  (libraries "kyuba" "syscall" "seteh" "sievert")
 
   (code "monitor")
 
@@ -30,7 +32,7 @@
   (description "Kyuba minimal init programme")
   (version "2")
 
-  (libraries "syscall")
+  (libraries "syscall" "sievert")
 
   (code "init" "init-system")
 
@@ -66,7 +68,7 @@
   (description "Kyuba Job Server")
   (version "1")
 
-  (libraries "kyuba" "seteh")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "server-job"))
 
@@ -75,7 +77,7 @@
   (description "Kyuba Scheduler")
   (version "1")
 
-  (libraries "kyuba" "seteh")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "scheduler"))
 
@@ -84,7 +86,7 @@
   (description "Kyuba Seteh Scripting Server")
   (version "1")
 
-  (libraries "seteh" "kyuba")
+  (libraries "seteh" "kyuba" "sievert")
 
   (code "server-seteh"))
 
@@ -93,7 +95,7 @@
   (description "Kyuba Configuration Server")
   (version "1")
 
-  (libraries "seteh" "kyuba")
+  (libraries "seteh" "kyuba" "sievert")
 
   (code "configuration"))
 

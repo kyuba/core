@@ -1,7 +1,7 @@
 ###- QUICK AND DIRTY: COMPILATION AND INSTALLATION -############################
   You'll need curie-11 including icemake and seteh...
 
-    $ icemake -dif /usr
+    $ icemake -dif /
 
 
 ################################################################################

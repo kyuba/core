@@ -31,10 +31,11 @@
 #include <curie/exec.h>
 #include <curie/multiplex.h>
 #include <curie/signal.h>
-#include <curie/shell.h>
 #include <curie/network.h>
 
 #include <syscall/syscall.h>
+
+#include <sievert/shell.h>
 
 #include <kyuba/script.h>
 
