@@ -33,6 +33,8 @@
 #include <kyuba/ipc.h>
 #include <kyuba/types.h>
 
+#include <sievert/sexpr.h>
+
 define_symbol (sym_scheduler,            "scheduler");
 define_symbol (sym_modes,                "modes");
 define_symbol (sym_get_mode,             "get-mode");
@@ -51,9 +53,10 @@ define_symbol (sym_disable,              "disable");
 define_symbol (sym_merge,                "merge");
 define_symbol (sym_mode_data,            "mode-data");
 define_symbol (sym_enabled,              "enabled");
-define_symbol (sym_disabled,             "disabled");
 define_symbol (sym_enabling,             "enabling");
 define_symbol (sym_disabling,            "disabling");
+define_symbol (sym_unresolved,           "unresolved");
+define_symbol (sym_blocked,              "blocked");
 
 static sexpr system_data,
              current_mode         = sx_nonexistent,
@@ -65,7 +68,8 @@ static sexpr system_data,
 static int currently_initialising = 0;
 
 static void merge_mode (sexpr mode);
-static sexpr merge_lists (sexpr a, sexpr b);
+static sexpr compile_list (sexpr l);
+static void update_services ( void );
 
 static void update_module_state (sexpr system, sexpr module, sexpr state)
 {
@@ -77,38 +81,303 @@ static void update_service_state (sexpr system, sexpr service, sexpr state)
 #warning update_service_state() is not yet implemented!
 }
 
-static sexpr system_module_action (sexpr system, sexpr module, sexpr action)
+static void system_module_action (sexpr system, sexpr module, sexpr action)
 {
-#warning update_service_state() is not yet implemented!
-}
+    struct kyu_module *m = (struct kyu_module *)module;
+    sexpr f = m->schedulerflags;
+    sexpr s = lx_environment_lookup (system_data, system);
+    struct kyu_system *sys = (struct kyu_system *)s;
+    sexpr ml = sx_set_remove (sys->modules, module), mo;
 
-static sexpr system_service_action (sexpr system, sexpr service, sexpr action)
-{
-#warning system_service_action() is not yet implemented!
-    sexpr c = lx_environment_lookup (system_data, system),
-          rv = sx_true;
+    f = sx_set_remove (f, sym_enabling);
+    f = sx_set_remove (f, sym_disabling);
+    f = sx_set_remove (f, sym_enabled);
 
-    if (nexp (c))
+    if (truep (equalp (action, sym_enable)))
     {
-        return sx_false;
+        f = sx_set_add (f, sym_enabling);
+    }
+    else if (truep (equalp (action, sym_disable)))
+    {
+        f = sx_set_add (f, sym_disabling);
+    }
+    else
+    {
+        /*! \todo add some way to send custom commands */
     }
 
-    return rv;
+    mo = kyu_make_module (m->name, m->description, m->provides, m->requires,
+                              m->before, m->after, m->conflicts, f,
+                              m->functions);
+    ml = sx_set_add (ml, mo);
+
+    system_data = lx_environment_unbind (system_data, system);
+    system_data = lx_environment_bind (system_data, system,
+        kyu_make_system (sys->name, sys->description, sys->location,
+                         sys->schedulerflags, ml, sys->services));
+
+    update_services ();
+
+    kyu_command (cons (sym_update, cons (system, cons (mo, sx_end_of_list))));
+}
+
+static void system_service_action (sexpr system, sexpr service, sexpr action)
+{
+    struct kyu_service *s = (struct kyu_service *)service;
+    struct kyu_module *mo;
+    sexpr m = s->modules;
+
+    /*! \todo another great place to decide on greediness of the scheduler... */
+
+    while (consp (m))
+    {
+        mo = (struct kyu_module *)car (m);
+
+        if (truep (sx_set_memberp (mo->schedulerflags, sym_enabling)) ||
+            truep (sx_set_memberp (mo->schedulerflags, sym_disabling)) ||
+            truep (sx_set_memberp (mo->schedulerflags, sym_enabled)))
+        {
+            system_module_action (system, (sexpr)mo, action);
+            return;
+        }
+
+        m = cdr (m);
+    }
+
+    system_module_action (system, car (s->modules), action);
 }
 
 static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
 {
-    sexpr rv = sx_end_of_list;
-#warning reschedule_get_enable() is not yet implemented!
+    sexpr rv = sx_end_of_list, c, a, ca, sa, sd, sdd,
+          sys = lx_environment_alist (system_data), ures = sx;
+
+    while (consp (sys))
+    {
+        ca = car (sys);
+        sa = car (ca);
+        sd = cdr (ca);
+
+        if (ksystemp (sd))
+        {
+            struct kyu_system *sp = (struct kyu_system *)sd;
+
+            for (sd = sp->modules; consp (sd); sd = cdr (sd))
+            {
+                struct kyu_module *m = (struct kyu_module *)car (sd);
+
+                for (c = sx; consp (c); c = cdr (c))
+                {
+                    a = car (c);
+                    sdd = cdr (a);
+
+                    if (symbolp (sdd) && truep (equalp (sa, car(a))) &&
+                        truep (equalp (sdd, m->name)))
+                    {
+                        rv = cons (cons ((sexpr)m, sa), rv);
+                        ures = sx_set_remove (ures, a);
+                    }
+                }
+            }
+
+            for (sd = sp->services; consp (sd); sd = cdr (sd))
+            {
+                struct kyu_service *s = (struct kyu_service *)car (sd);
+
+                for (c = sx; consp (c); c = cdr (c))
+                {
+                    a = car (c);
+                    sdd = cdr (a);
+
+                    if (consp (sdd) && truep (equalp (sa, car(a))) &&
+                        truep (rx_match_sx (cdr (sdd), s->name)))
+                    {
+                        rv = cons (cons ((sexpr)s, sa), rv);
+                        ures = sx_set_remove (ures, a);
+                    }
+                }
+            }
+        }
+
+        sys = cdr (sys);
+    }
+
+    while (consp (ures))
+    {
+        ca = car (ures);
+        sa = car (ca);
+        sd = cdr (ca);
+
+        if (consp (sd))
+        {
+            sd = car (sd);
+        }
+
+        *unresolved = cons (cons(sa, sd), *unresolved);
+
+        ures = cdr (ures);
+    }
+
     return rv;
 }
 
 /* note to self: unresolved services are meaningless when disabling... */
 static sexpr reschedule_get_disable (sexpr sx)
 {
-#warning reschedule_get_disable() is not yet implemented!
-    return sx;
+    sexpr rv = sx_end_of_list, c, a, ca, sa, sd, sdd,
+          sys = lx_environment_alist (system_data);
+
+    while (consp (sys))
+    {
+        ca = car (sys);
+        sa = car (ca);
+        sd = cdr (ca);
+
+        if (ksystemp (sd))
+        {
+            struct kyu_system *sp = (struct kyu_system *)sd;
+
+            for (sd = sp->modules; consp (sd); sd = cdr (sd))
+            {
+                struct kyu_module *m = (struct kyu_module *)car (sd);
+
+                for (c = sx; consp (c); c = cdr (c))
+                {
+                    a = car (c);
+                    sdd = cdr (a);
+
+                    if (symbolp (sdd) && truep (equalp (sa, car(a))) &&
+                        truep (equalp (sdd, m->name)))
+                    {
+                        rv = cons (cons ((sexpr)m, sa), rv);
+                    }
+                }
+            }
+
+            for (sd = sp->services; consp (sd); sd = cdr (sd))
+            {
+                struct kyu_service *s = (struct kyu_service *)car (sd);
+
+                for (c = sx; consp (c); c = cdr (c))
+                {
+                    a = car (c);
+                    sdd = cdr (a);
+
+                    if (consp (sdd) && truep (equalp (sa, car(a))) &&
+                        truep (rx_match_sx (cdr (sdd), s->name)))
+                    {
+                        rv = cons (cons ((sexpr)s, sa), rv);
+                    }
+                }
+            }
+        }
+
+        sys = cdr (sys);
+    }
+
+    return rv;
 }
+
+/* returns #t if the requirments have already been met, (#nonexistent, list) if
+ * they cannot be met and a list of requirements if the requirements have not
+ * been met yet, but they can be met; finally, returns #f if not only the
+ * requirments have been met but that whatever was passed as this function's
+ * parameter is already enabled. */
+static sexpr requirements (sexpr sx)
+{
+    if (consp (sx))
+    {
+        return requirements (car (sx));
+    }
+    else if (kservicep (sx))
+    {
+        struct kyu_service *s = (struct kyu_service *)sx;
+        sexpr c = s->modules, br = sx_nonexistent, r;
+
+        if (truep (sx_set_memberp (s->schedulerflags, sym_enabled)))
+        {
+            return sx_false;
+        }
+
+        while (consp (c))
+        {
+            r = requirements (car (c));
+
+            /*! \todo: this ought to be the best spot to add some
+             * configurability about whether the scheduler should operate
+             * greedily or not... */
+
+            if (truep (r) || falsep (r))
+            {
+                return r;
+            }
+            else if (consp (r))
+            {
+                if ((nexp (br) || nexp (car (br))) || !nexp (car (r)))
+                {
+                    br = r;
+                }
+            }
+
+            c = cdr (c);
+        }
+
+        return br;
+    }
+    else if (kmodulep (sx))
+    {
+        struct kyu_module *m = (struct kyu_module *)sx;
+        sexpr unresolved = sx_end_of_list, reqs, rv = sx_true, a;
+
+        if (truep (sx_set_memberp (m->schedulerflags, sym_enabled)))
+        {
+            return sx_false;
+        }
+
+        reqs = reschedule_get_enable (compile_list(m->requires), &unresolved);
+
+        if (!eolp (unresolved))
+        {
+            return cons (sx_nonexistent, unresolved);
+        }
+
+        for (; consp (reqs); reqs = cdr (reqs))
+        {
+            a = car (reqs);
+
+            if (kmodulep (a))
+            {
+                struct kyu_module *ms = (struct kyu_module *)a;
+
+                if (truep (sx_set_memberp (ms->schedulerflags, sym_enabled)))
+                {
+                    continue;
+                }
+            }
+            else if (kservicep (a))
+            {
+                struct kyu_service *ss = (struct kyu_service *)a;
+
+                if (truep (sx_set_memberp (ss->schedulerflags, sym_enabled)))
+                {
+                    continue;
+                }
+            }
+
+            if (truep (rv))
+            {
+                rv = sx_end_of_list;
+            }
+
+            rv = cons (a, rv);
+        }
+
+        return rv;
+    }
+
+    return sx_nonexistent;
+}
+
 
 /* this function should gather a list of services whose status should get
  * modified according to the mode we're currently switching to.
@@ -129,11 +398,82 @@ static sexpr reschedule_get_disable (sexpr sx)
  */
 static void reschedule ( void )
 {
-    sexpr enable_unresolved,
+    sexpr unresolved = sx_end_of_list, c, a, ca, aa, r,
           to_enable = reschedule_get_enable
-              (target_mode_enable, &enable_unresolved),
+              (target_mode_enable, &unresolved),
+          seen = to_enable,
           to_disable = reschedule_get_disable
               (target_mode_disable);
+
+    c = to_enable;
+
+    while (consp (c))
+    {
+        a = car (c);
+
+        r = requirements (a);
+
+        if (falsep (r)) /* does not need to be enabled, so we ditch it */
+        {
+            to_enable = sx_set_remove (to_enable, a);
+        }
+        else if (consp (r)) /* cannot enable (yet) */
+        {
+            to_enable = sx_set_remove (to_enable, a);
+
+            if (nexp (car (r))) /* unresolved requirments */
+            {
+                unresolved = sx_set_merge (unresolved, cdr (r));
+            }
+            else /* resolved requirements */
+            {
+                for (ca = r; consp (ca); ca = cdr (ca))
+                {
+                    aa = car (ca);
+
+                    if (falsep (sx_set_memberp (seen, aa)))
+                    {
+                        to_enable = sx_set_add (to_enable, aa);
+                    }
+                }
+
+                seen = sx_set_merge (seen, r);
+
+                c = to_enable;
+
+                continue;
+            }
+        }
+
+        c = cdr (c);
+    }
+
+    if (!eolp (unresolved))
+    {
+        kyu_command (cons (sym_unresolved, cons (unresolved, sx_end_of_list)));
+    }
+
+    if (!nexp (to_enable))
+    {
+        while (consp (to_enable))
+        {
+            a = car (to_enable);
+            aa = car (a);
+
+            if (kservicep (aa))
+            {
+                system_service_action (cdr (a), aa, sym_enable);
+            }
+            else if (kmodulep (aa))
+            {
+                system_module_action (cdr (a), aa, sym_enable);
+            }
+
+            to_enable = cdr (to_enable);
+        }
+    }
+
+    kyu_command (cons (sym_disable, to_disable));
 #warning reschedule() is not yet implemented!
 }
 
@@ -212,7 +552,7 @@ static void update_services ( void )
                                 f = cdr (f);
                             }
 
-                            mods = cons (s_se, mods);
+                            mods = cons (s_mo, mods);
 
                             nservices = cons
                                 (kyu_make_service (sm, desc, flags, mods),
@@ -269,39 +609,6 @@ static void print_scheduler_data ( void )
     }
 }
 
-static sexpr merge_lists (sexpr a, sexpr b)
-{
-    sexpr r = a;
-
-    while (consp (b))
-    {
-        sexpr v = car (b), c = r;
-        char have_item = (char)0;
-
-        while (consp (c))
-        {
-            sexpr va = car (c);
-
-            if (truep (equalp (v, va)))
-            {
-                have_item = (char)1;
-                break;
-            }
-
-            c = cdr (c);
-        }
-
-        if (have_item == (char)0)
-        {
-            r = cons (v, r);
-        }
-
-        b = cdr (b);
-    }
-
-    return r;
-}
-
 static void merge_mode_data (sexpr mo)
 {
     while (consp (mo))
@@ -321,15 +628,15 @@ static void merge_mode_data (sexpr mo)
         }
         else if (truep (equalp (aa, sym_enable)))
         {
-            target_mode_enable  = merge_lists (target_mode_enable, cdr (a));
+            target_mode_enable  = sx_set_merge (target_mode_enable, cdr (a));
         }
         else if (truep (equalp (aa, sym_disable)))
         {
-            target_mode_disable = merge_lists (target_mode_disable, cdr (a));
+            target_mode_disable = sx_set_merge (target_mode_disable, cdr (a));
         }
         else
         {
-            target_mode_ipc     = merge_lists (target_mode_ipc, cdr (a));
+            target_mode_ipc     = sx_set_merge (target_mode_ipc, cdr (a));
         }
 
         mo = cdr (mo);
@@ -354,7 +661,20 @@ static sexpr compile_list (sexpr l)
     {
         sexpr la = car (l);
 
-        r = cons (la, r);
+        if (symbolp (la))
+        {
+            r = cons (cons (native_system, la), r);
+        }
+        if (stringp (la))
+        {
+            r = cons (cons (native_system, cons (la, rx_compile_sx (la))), r);
+        }
+        else if consp (la)
+        {
+            sexpr d = cdr (la);
+
+            r = cons (cons (car(la), cons (d, rx_compile_sx(d))), r);
+        }
 
         l = cdr (l);
     }
@@ -394,10 +714,12 @@ static void reevaluate_target_data ( void )
 
     /* this is debug and will get ditched once it's stable: */
 
+/*
     kyu_command (cons (sym_mode_data,
                        cons (target_mode_enable,
                              cons (target_mode_disable,
                                    cons (target_mode_ipc, sx_end_of_list)))));
+*/
 
     reschedule ();
 
@@ -511,7 +833,6 @@ static void on_event (sexpr sx, void *aux)
             if (currently_initialising == 0)
             {
                 update_services();
-                print_scheduler_data ();
                 reevaluate_target_data ();
             }
         }

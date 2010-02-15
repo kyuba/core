@@ -1,0 +1,10 @@
+;;
+; vim:ft=lisp
+;;
+
+(daemon d-udev "Dummy UDEV daemon"
+  (provides "udev")
+  (before "fs-.*")
+  (schedule-limitations once-per-host)
+  (binary "udev")
+  (io-type log))

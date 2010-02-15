@@ -4,6 +4,7 @@
 
 (daemon d-example "Example Daemon"
   (provides "http-server" "example")
+  (requires "udev" "acpi")
   (after "fs-.*")
   (before "example")
   (conflicts-with d-apache)
