@@ -1,0 +1,14 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script s-proc "Filesystem: /proc"
+  (provides "fs-proc")
+  (schedule-limitations once-per-host)
+  (io-type log)
+  (functions
+    (start
+      (run "echo" "meh")
+      (run "sleep" "5"))
+    (stop
+      (run "echo" stop-text))))
