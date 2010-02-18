@@ -215,8 +215,6 @@ static sexpr action_wrap
 
         arguments = cdr (arguments);
 
-        kyu_command (cons (sym_action_wrap, arguments));
-
         while (consp (arguments))
         {
             v = car (arguments);

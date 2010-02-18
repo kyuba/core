@@ -60,6 +60,7 @@ define_symbol (sym_reply,              "reply");
 define_symbol (sym_native_system,      "native-system");
 define_symbol (sym_statusp,            "status?");
 define_symbol (sym_status,             "status");
+define_symbol (sym_kill_subprocesses,  "kill-subprocesses");
 
 void initialise_kyu_script_commands ( void );
 
@@ -68,6 +69,8 @@ sexpr kyu_sc_run (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_get_configuration (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_message (sexpr arguments, struct machine_state *state);
+sexpr kyu_sc_exit (sexpr arguments, struct machine_state *state);
+sexpr kyu_sc_kill_subprocesses (sexpr arguments, struct machine_state *state);
 
 #ifdef __cplusplus
 }

@@ -148,7 +148,12 @@ sexpr kyu_sx_default_environment ( void )
                                             kyu_sc_get_configuration)),
                  cons (cons (sym_message,
                              lx_foreign_mu (sym_message, kyu_sc_message)),
-                       sx_end_of_list)))));
+                 cons (cons (sym_exit,
+                             lx_foreign_mu (sym_exit, kyu_sc_exit)),
+                 cons (cons (sym_kill_subprocesses,
+                             lx_foreign_mu (sym_kill_subprocesses,
+                                            kyu_sc_kill_subprocesses)),
+                       sx_end_of_list)))))));
     }
 
     return env;
@@ -381,3 +386,53 @@ sexpr kyu_sc_message (sexpr arguments, struct machine_state *state)
         return sx_true;
     }
 }
+
+sexpr kyu_sc_exit (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_exit,
+                                    kyu_sc_exit), state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+        sexpr ev = car (arguments);
+
+        if (truep (ev))
+        {
+            cexit (0);
+        }
+        else if (falsep (ev))
+        {
+            cexit (1);
+        }
+        else
+        {
+            cexit (sx_integer (ev));
+        }
+
+        return ev; /* not reached... */
+    }
+}
+
+sexpr kyu_sc_kill_subprocesses (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_kill_subprocesses,
+                                    kyu_sc_kill_subprocesses), state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+#warning kyu_sc_kill_subprocesses() not implemented yet
+
+        return make_integer(0);
+    }
+}
+

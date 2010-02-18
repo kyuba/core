@@ -3,7 +3,6 @@
 ;;
 
 (on-event power-on
-
   (keep-alive "kyu-server-configuration" "data/configuration/.*\\.sx")
 
   (keep-alive "ipc-hub")
@@ -14,7 +13,15 @@
   (power-reset))
 
 (on-event power-reset
-  (run #f "echo" "power-reset, nao"))
+  (kill-subprocesses "(kyu-server-configuration|ipc-hub|kyu-server-job)")
+
+  (run #f "echo" "power-reset, nao")
+  
+  (exit 0))
 
 (on-event power-down
-  (run #f "echo" "power-down, nao"))
+  (kill-subprocesses "(kyu-server-configuration|ipc-hub|kyu-server-job)")
+
+  (run #f "echo" "power-down, nao")
+  
+  (exit 1))

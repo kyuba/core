@@ -584,10 +584,15 @@ static sexpr users (sexpr sx)
  * whenever any of the modules or services changes state, this function gets
  * called again, which should enable both proper enabling and disabling
  * throughout.
+ *
+ * returns #t when it did do something or if there's still something to do
+ * before the current mode is reached, otherwise it'll return #f to indicate
+ * that the target mode has been reached (and that no rescheduling needs to be
+ * done or can be done anymore with this mode data).
  */
-static void reschedule ( void )
+static sexpr reschedule ( void )
 {
-    sexpr unresolved = sx_end_of_list, c, a, ca, aa, r,
+    sexpr unresolved = sx_end_of_list, c, a, ca, aa, r, rv = sx_false,
           to_enable = reschedule_get_enable
               (target_mode_enable, &unresolved),
           seen = to_enable,
@@ -606,33 +611,42 @@ static void reschedule ( void )
         {
             to_enable = sx_set_remove (to_enable, a);
         }
-        else if (consp (r)) /* cannot enable (yet) */
+        else
         {
-            to_enable = sx_set_remove (to_enable, a);
-
-//            kyu_command (cons (make_symbol ("need"), cons (a, r)));
-
-            if (nexp (car (r))) /* unresolved requirments */
+            if (truep(r))
             {
-                unresolved = sx_set_merge (unresolved, cdr (r));
+                rv = sx_true;
             }
-            else /* resolved requirements */
+            else if (consp (r)) /* cannot enable (yet) */
             {
-                for (ca = r; consp (ca); ca = cdr (ca))
+                to_enable = sx_set_remove (to_enable, a);
+
+//              kyu_command (cons (make_symbol ("need"), cons (a, r)));
+
+                if (nexp (car (r))) /* unresolved requirements */
                 {
-                    aa = car (ca);
-
-                    if (falsep (sx_set_memberp (seen, aa)))
-                    {
-                        to_enable = sx_set_add (to_enable, aa);
-                    }
+                    unresolved = sx_set_merge (unresolved, cdr (r));
                 }
+                else /* resolved requirements */
+                {
+                    rv = sx_true;
+                
+                    for (ca = r; consp (ca); ca = cdr (ca))
+                    {
+                        aa = car (ca);
 
-                seen = sx_set_merge (seen, r);
+                        if (falsep (sx_set_memberp (seen, aa)))
+                        {
+                            to_enable = sx_set_add (to_enable, aa);
+                        }
+                    }
 
-                c = to_enable;
+                    seen = sx_set_merge (seen, r);
 
-                continue;
+                    c = to_enable;
+
+                    continue;
+                }
             }
         }
 
@@ -651,25 +665,30 @@ static void reschedule ( void )
         {
             to_disable = sx_set_remove (to_disable, a);
         }
-        else if (consp (r)) /* cannot disable yet, still in use */
+        else
         {
-            to_disable = sx_set_remove (to_disable, a);
+            rv = sx_true;
 
-            for (ca = r; consp (ca); ca = cdr (ca))
+            if (consp (r)) /* cannot disable yet, still in use */
             {
-                aa = car (ca);
+                to_disable = sx_set_remove (to_disable, a);
 
-                if (falsep (sx_set_memberp (seen, aa)))
+                for (ca = r; consp (ca); ca = cdr (ca))
                 {
-                    to_disable = sx_set_add (to_disable, aa);
+                    aa = car (ca);
+
+                    if (falsep (sx_set_memberp (seen, aa)))
+                    {
+                        to_disable = sx_set_add (to_disable, aa);
+                    }
                 }
+
+                seen = sx_set_merge (seen, r);
+
+                c = to_disable;
+
+                continue;
             }
-
-            seen = sx_set_merge (seen, r);
-
-            c = to_disable;
-
-            continue;
         }
 
         c = cdr (c);
@@ -720,8 +739,10 @@ static void reschedule ( void )
             }
         }
 
-        to_enable = cdr (to_enable);
+        to_disable = cdr (to_disable);
     }
+
+    return rv;
 }
 
 /* the module list is taken as the primary listing, so this function is
@@ -887,7 +908,7 @@ static void merge_mode_data (sexpr mo)
         }
         else
         {
-            target_mode_ipc     = sx_set_merge (target_mode_ipc, cdr (a));
+            target_mode_ipc     = sx_set_add (target_mode_ipc, a);
         }
 
         mo = cdr (mo);
@@ -934,7 +955,7 @@ static sexpr compile_list (sexpr l)
 }
 
 /* look up the target mode and merge all enable/disable/ipc data */
-static void rebuild_target_data ( void )
+static sexpr rebuild_target_data ( void )
 {
     sexpr mo = lx_environment_lookup (mode_specifications, target_mode);
 
@@ -948,35 +969,42 @@ static void rebuild_target_data ( void )
     }
     else
     {
-        kyu_command (cons (sym_error, cons (sym_missing_mode_data,
-                     cons (target_mode, sx_end_of_list))));
+        return cons (sym_error, cons (sym_missing_mode_data,
+                     cons (target_mode, sx_end_of_list)));
     }
 
     target_mode_enable  = compile_list (target_mode_enable);
     target_mode_disable = compile_list (target_mode_disable);
+
+    return sx_true;
 }
 
 static void reevaluate_target_data ( void )
 {
+    sexpr t;
+
     kyu_command (cons (sym_reevaluating_mode,
                        cons (target_mode, sx_end_of_list)));
 
-    rebuild_target_data ();
+    if (!truep(t = rebuild_target_data ()))
+    {
+        kyu_command (t);
+        return;
+    }
 
-    /* this is debug and will get ditched once it's stable: */
+    if (falsep (reschedule ()))
+    {
+        if (falsep(equalp(current_mode, target_mode)))
+        {
+            current_mode = target_mode;
+            kyu_command (cons (sym_mode, cons (target_mode, sx_end_of_list)));
 
-/*
-    kyu_command (cons (sym_mode_data,
-                       cons (target_mode_enable,
-                             cons (target_mode_disable,
-                                   cons (target_mode_ipc, sx_end_of_list)))));
-*/
-
-    reschedule ();
-
-    /* TODO: send this once the new mode is active: */
-/*    current_mode = mode;
-    kyu_command (cons (sym_mode, cons (mode, sx_end_of_list)));*/
+            for (t = target_mode_ipc; consp (t); t = cdr (t))
+            {
+                kyu_command (car(t));
+            }
+        }
+    }
 }
 
 static void switch_mode (sexpr mode)
