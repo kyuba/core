@@ -72,6 +72,7 @@ define_symbol (sym_action,               "action");
 define_symbol (sym_blocked,              "blocked");
 
 define_symbol (sym_action_wrap,          "action-wrap");
+define_symbol (sym_action_dispatch,      "action-dispatch");
 define_symbol (sym_warning,              "warning");
 
 define_symbol (sym_module_has_no_functions,     "module-has-no-functions");
@@ -79,8 +80,6 @@ define_symbol (sym_module_action_not_available, "module-action-not-available");
 
 static sexpr global_environment, my_modules, mod_functions;
 static int open_config_files = 0;
-
-#warning the seteh server does not heed the scheduler's commands yet
 
 static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
 {
@@ -192,9 +191,12 @@ static sexpr action_wrap
 {
     if (eolp (state->stack))
     {
-#warning action_wrap() still needs to merge the required mod env...
         state->stack = cons(lx_foreign_mu (sym_action_wrap, action_wrap),
                             state->stack);
+ 
+        state->stack = cons (car (state->code), state->stack);
+        state->code  = cdr (state->code);
+
         return sx_nonexistent;
     }
     else
@@ -258,7 +260,44 @@ static sexpr action_wrap
     }
 }
 
-static void handle_action
+static sexpr action_dispatch
+    (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack = cons(lx_foreign_mu (sym_action_dispatch,
+                                           action_dispatch),
+                            state->stack);
+
+        state->stack = cons (car (state->code), state->stack);
+        state->code  = cdr (state->code);
+        state->stack = cons (car (state->code), state->stack);
+        state->code  = cdr (state->code);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+        sexpr meta = car (arguments), code, env;
+
+        arguments = cdr (arguments);
+        code = car (arguments);
+        env = car (cdr (arguments));
+
+        state->stack = sx_end_of_list;
+        state->code  = cons (cons (sym_action_wrap, cons (meta, code)),
+                             sx_end_of_list);
+
+        if (environmentp (env))
+        {
+            state->environment = lx_environment_join (state->environment, env);
+        }
+
+        return sx_unquote;
+    }
+}
+
+static sexpr handle_action
     (struct kyu_module *mod, sexpr action)
 {
     sexpr act = lx_environment_lookup (mod_functions, mod->name), c, a;
@@ -267,7 +306,8 @@ static void handle_action
     {
         kyu_command (cons (sym_warning, cons (sym_module_has_no_functions,
                      cons (mod->name, sx_end_of_list))));
-        return;
+
+        return sx_false;
     }
 
     for (c = act; consp (c); c = cdr (c))
@@ -276,37 +316,42 @@ static void handle_action
 
         if (truep (equalp (car (a), action)))
         {
-            lx_eval (cons (cons (sym_action_wrap,
-                              cons (sx_quote, cons (cons (mod->name, action),
-                              cdr (a)))),
+            lx_eval (cons (cons (sym_action_dispatch,
+                              cons (cons (mod->name, action),
+                                    cons (cdr (a),
+                                    cons (cons (sym_get_configuration,
+                                                cons (mod->name,
+                                                      sx_end_of_list)),
+                                          sx_end_of_list)))),
                            sx_end_of_list),
                      global_environment);
-            return;
+
+            return sx_true;
         }
     }
 
     kyu_command (cons (sym_warning, cons (sym_module_action_not_available,
                  cons (mod->name, sx_end_of_list))));
 
-#warning handle_action() still needs to update the mod after warnings
+    return sx_false;
 }
 
-static void handle_enable_request
+static sexpr handle_enable_request
     (struct kyu_module *mod)
 {
-    handle_action (mod, sym_start);
+    return handle_action (mod, sym_start);
 }
 
-static void handle_disable_request
+static sexpr handle_disable_request
     (struct kyu_module *mod)
 {
-    handle_action (mod, sym_stop);
+    return handle_action (mod, sym_stop);
 }
 
 static void handle_external_mod_update
     (struct kyu_module *newdef, struct kyu_module *mydef)
 {
-    sexpr c, a, module;
+    sexpr c, a, module, rv = sx_nil, flags = newdef->schedulerflags;
 
     c = sx_set_difference (mydef->schedulerflags, newdef->schedulerflags);
 
@@ -315,7 +360,7 @@ static void handle_external_mod_update
         return;
     }
 
-    while (consp (c))
+    while (consp (c) && nilp (rv))
     {
         a = car (c);
 
@@ -323,29 +368,34 @@ static void handle_external_mod_update
         {
             if (falsep (sx_set_memberp (mydef->schedulerflags, sym_enabling)))
             {
-                handle_enable_request (mydef);
+                rv = handle_enable_request (mydef);
+
+                if (falsep (rv))
+                {
+                    flags = sx_set_add (mydef->schedulerflags, sym_blocked);
+                }
             }
         }
         else if (truep (equalp (a, sym_disabling)))
         {
             if (falsep (sx_set_memberp (mydef->schedulerflags, sym_disabling)))
             {
-                handle_disable_request (mydef);
+                rv = handle_disable_request (mydef);
             }
         }
         else if (consp (a) &&
                  falsep (sx_set_memberp (mydef->schedulerflags, a)))
         {
-            handle_action (mydef, cdr (a));
+            rv = handle_action (mydef, cdr (a));
         }
 
         c = cdr (c);
     }
-    
+
     module = kyu_make_module
-            (mydef->name, mydef->description, mydef->provides, mydef->requires,
-             mydef->before, mydef->after, mydef->conflicts,
-             newdef->schedulerflags, mydef->functions);
+            (mydef->name, mydef->description, mydef->provides,
+             mydef->requires, mydef->before, mydef->after, mydef->conflicts,
+             flags, mydef->functions);
 
     my_modules = lx_environment_unbind (my_modules, mydef->name);
     my_modules = lx_environment_bind   (my_modules, mydef->name, module);
@@ -459,6 +509,10 @@ int cmain ()
     global_environment =
         lx_environment_bind (global_environment, sym_action_wrap,
                              lx_foreign_mu (sym_action_wrap, action_wrap));
+    global_environment =
+        lx_environment_bind (global_environment, sym_action_dispatch,
+                             lx_foreign_mu (sym_action_dispatch,
+                                            action_dispatch));
     my_modules    = lx_make_environment (sx_end_of_list);
     mod_functions = lx_make_environment (sx_end_of_list);
 

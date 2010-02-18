@@ -756,10 +756,6 @@ static void update_services ( void )
     sexpr c = lx_environment_alist (system_data);
     system_data = lx_make_environment (sx_end_of_list);
 
-#warning update_services() needs to make sure that certain flags, like blocked,\
- are only copied to the generated services when they're on all of the defining\
- modules
-
     while (consp (c))
     {
         sexpr a = car (c), sysname = car (a), sys = cdr (a);
@@ -791,37 +787,25 @@ static void update_services ( void )
                         {
                             sexpr desc = sv->description,
                                   flags = sv->schedulerflags,
-                                  mods = sv->modules,
-                                  f = m->schedulerflags;
+                                  mods = sv->modules;
 
                             if (falsep (equalp (desc, m->description)))
                             {
                                 desc = sx_join (desc, sym_c_s, m->description);
                             }
 
-                            while (consp (f))
+                            flags = sx_set_merge (flags, m->schedulerflags);
+
+                            if (truep (sx_set_memberp (flags, sym_blocked)) &&
+                                (falsep (sx_set_memberp (m->schedulerflags,
+                                                         sym_blocked)) ||
+                                 falsep (sx_set_memberp (sv->schedulerflags,
+                                                         sym_blocked))))
                             {
-                                sexpr fa = car (f), fc = flags;
-                                char fh = (char)0;
-
-                                while (consp (fc))
-                                {
-                                    sexpr fca = car (fc);
-
-                                    if (truep (equalp (fc, fca)))
-                                    {
-                                        fh = (char)1;
-                                    }
-
-                                    fc = cdr (fc);
-                                }
-
-                                if (fh == (char)0)
-                                {
-                                    flags = cons (fa, flags);
-                                }
-
-                                f = cdr (f);
+                                /* make sure that the blocked flag is only going
+                                 * to be on a service, if all providing modules
+                                 * are blocked. */
+                                flags = sx_set_remove (flags, sym_blocked);
                             }
 
                             mods = cons (s_mo, mods);
