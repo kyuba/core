@@ -621,8 +621,6 @@ static sexpr reschedule ( void )
             {
                 to_enable = sx_set_remove (to_enable, a);
 
-//              kyu_command (cons (make_symbol ("need"), cons (a, r)));
-
                 if (nexp (car (r))) /* unresolved requirements */
                 {
                     unresolved = sx_set_merge (unresolved, cdr (r));
