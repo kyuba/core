@@ -1,7 +1,0 @@
-;;
-; vim:ft=lisp
-;;
-
-(bind s-proc
-  (start-text . "hello world!")
-  (stop-text . "bye world!"))

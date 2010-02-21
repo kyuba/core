@@ -2,10 +2,14 @@
 ; vim:ft=lisp
 ;;
 
-(daemon d-udev "Dummy UDEV daemon"
-  (provides "udev")
-  (requires "fs-proc")
-  (before "fs-.*")
+(daemon s-udev "UDEV daemon"
+  (provides "udev" "fs-udev")
+  (requires "fs-proc" "fs-sys")
+  (before ".*")
   (schedule-limitations once-per-host)
-  (binary "udev")
-  (io-type log))
+  (functions 
+    (start
+      (run "echo" "udev starting..."))
+    (stop
+      (run "echo" "udev stopping..."))))
+

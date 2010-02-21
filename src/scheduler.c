@@ -58,6 +58,7 @@ define_symbol (sym_disabling,            "disabling");
 define_symbol (sym_unresolved,           "unresolved");
 define_symbol (sym_blocked,              "blocked");
 define_symbol (sym_action,               "action");
+define_symbol (sym_any_rx,               ".*");
 
 static sexpr system_data,
              current_mode         = sx_nonexistent,
@@ -76,13 +77,18 @@ static void update_services ( void );
 static sexpr statusp (sexpr s)
 {
     sexpr f = sx_end_of_list, fa;
-        
+ 
+    if (consp (s))
+    {
+        s = car (s);
+    }
+
     if (kmodulep (s))
     {
         struct kyu_module *m = (struct kyu_module *)s;
         f = m->schedulerflags;
     }
-    else if (ksystemp (s))
+    else if (kservicep (s))
     {
         struct kyu_service *sv = (struct kyu_service *)s;
         f = sv->schedulerflags;
@@ -103,6 +109,30 @@ static sexpr statusp (sexpr s)
     }
 
     return sx_false;
+}
+
+/* test if a module or service has a specific flag */
+static sexpr flagp (sexpr s, sexpr flag)
+{
+    sexpr f = sx_end_of_list;
+
+    if (consp (s))
+    {
+        s = car (s);
+    }
+        
+    if (kmodulep (s))
+    {
+        struct kyu_module *m = (struct kyu_module *)s;
+        f = m->schedulerflags;
+    }
+    else if (kservicep (s))
+    {
+        struct kyu_service *sv = (struct kyu_service *)s;
+        f = sv->schedulerflags;
+    }
+
+    return sx_set_memberp (f, flag);
 }
 
 static void system_module_action (sexpr system, sexpr module, sexpr action)
@@ -170,9 +200,9 @@ static void system_service_action (sexpr system, sexpr service, sexpr action)
     {
         mo = (struct kyu_module *)car (m);
 
-        if (truep (sx_set_memberp (mo->schedulerflags, sym_enabling)) ||
-            truep (sx_set_memberp (mo->schedulerflags, sym_disabling)) ||
-            truep (sx_set_memberp (mo->schedulerflags, sym_enabled)))
+        if ((truep (sx_set_memberp (mo->schedulerflags, sym_enabling)) ||
+             truep (sx_set_memberp (mo->schedulerflags, sym_disabling)) ||
+             truep (sx_set_memberp (mo->schedulerflags, sym_enabled))))
         {
             system_module_action (system, (sexpr)mo, action);
             return;
@@ -181,6 +211,22 @@ static void system_service_action (sexpr system, sexpr service, sexpr action)
         m = cdr (m);
     }
 
+    m = s->modules;
+
+    while (consp (m))
+    {
+        mo = (struct kyu_module *)car (m);
+
+        if (falsep (sx_set_memberp (mo->schedulerflags, sym_blocked)))
+        {
+            system_module_action (system, (sexpr)mo, action);
+            return;
+        }
+
+        m = cdr (m);
+    }
+
+    /* this should never have been reached... */
     system_module_action (system, car (s->modules), action);
 }
 
@@ -209,7 +255,7 @@ static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
                     a = car (c);
                     sdd = cdr (a);
 
-                    if (symbolp (sdd) && truep (equalp (sa, car(a))) &&
+                    if (symbolp (sdd) && truep (rx_match_sx (car(a), sa)) &&
                         truep (equalp (sdd, m->name)))
                     {
                         rv = cons (cons ((sexpr)m, sa), rv);
@@ -227,7 +273,7 @@ static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
                     a = car (c);
                     sdd = cdr (a);
 
-                    if (consp (sdd) && truep (equalp (sa, car(a))) &&
+                    if (consp (sdd) && truep (rx_match_sx (car(a), sa)) &&
                         truep (rx_match_sx (cdr (sdd), s->name)))
                     {
                         rv = cons (cons ((sexpr)s, sa), rv);
@@ -243,15 +289,9 @@ static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
     while (consp (ures))
     {
         ca = car (ures);
-        sa = car (ca);
         sd = cdr (ca);
 
-        if (consp (sd))
-        {
-            sd = car (sd);
-        }
-
-        *unresolved = cons (cons(sa, sd), *unresolved);
+        *unresolved = cons (car (sd), *unresolved);
 
         ures = cdr (ures);
     }
@@ -284,8 +324,8 @@ static sexpr reschedule_get_disable (sexpr sx)
                     a = car (c);
                     sdd = cdr (a);
 
-                    if (symbolp (sdd) && truep (equalp (sa, car(a))) &&
-                        truep (equalp (sdd, m->name)))
+                    if (symbolp (sdd) && truep (rx_match_sx (car(a), sa)) &&
+                        truep (rx_match_sx (sdd, m->name)))
                     {
                         rv = cons (cons ((sexpr)m, sa), rv);
                     }
@@ -301,7 +341,7 @@ static sexpr reschedule_get_disable (sexpr sx)
                     a = car (c);
                     sdd = cdr (a);
 
-                    if (consp (sdd) && truep (equalp (sa, car(a))) &&
+                    if (consp (sdd) && truep (rx_match_sx (car(a), sa)) &&
                         truep (rx_match_sx (cdr (sdd), s->name)))
                     {
                         rv = cons (cons ((sexpr)s, sa), rv);
@@ -439,8 +479,8 @@ static sexpr requirements (sexpr sx)
  */
 static sexpr users (sexpr sx)
 {
-    sexpr c, sysname, sysx, mc, ma, modlist = sx_end_of_list, using, ua, uv,
-          user_list = sx_end_of_list, tsysname, mlx;
+    sexpr c, sysname, sysx, mc, ma = sx_nil, modlist = sx_end_of_list,
+          using, ua, uv, user_list = sx_end_of_list, tsysname, mlx = sx_nil;
     struct kyu_system  *sys;
     struct kyu_module  *mod;
     struct kyu_service *svc;
@@ -568,6 +608,190 @@ static sexpr users (sexpr sx)
     return user_list;
 }
 
+/* sort using before/after ordering; "after" takes precedence while sorting */
+static sexpr sort_modules_and_services (sexpr a, sexpr b)
+{
+    sexpr names_a  = sx_end_of_list, names_b  = sx_end_of_list,
+          svcn_a   = sx_end_of_list, svcn_b   = sx_end_of_list,
+          after_a  = sx_end_of_list, after_b  = sx_end_of_list,
+          before_a = sx_end_of_list, before_b = sx_end_of_list,
+          system_a = sx_end_of_list, system_b = sx_end_of_list,
+          c, ca;
+
+    if (truep (equalp (a, b)))
+    {
+        return sx_false;
+    }
+
+    if (consp (a))
+    {
+        system_a = sx_set_add (system_a, cdr (a));
+        a        = car (a);
+    }
+
+    if (consp (b))
+    {
+        system_b = sx_set_add (system_b, cdr (b));
+        b        = car (b);
+    }
+
+    if (kmodulep (a))
+    {
+        struct kyu_module *m = (struct kyu_module *)a;
+
+        names_a  = sx_set_add   (names_a, m->name);
+        svcn_a   = m->provides;
+        after_a  = sx_set_merge (m->after, m->requires);
+        before_a = m->before;
+    }
+    else if (kservicep (a))
+    {
+        struct kyu_service *s = (struct kyu_service *)a;
+
+        for (c = s->modules; consp (c); c = cdr (c))
+        {
+            struct kyu_module *m = (struct kyu_module *)car(c);
+
+            names_a  = sx_set_add   (names_a,  m->name);
+            svcn_a   = sx_set_merge (svcn_a,   m->provides);
+            after_a  = sx_set_merge (after_a,  m->after);
+            after_a  = sx_set_merge (after_a,  m->requires);
+            before_a = sx_set_merge (before_a, m->before);
+        }
+    }
+
+    if (kmodulep (b))
+    {
+        struct kyu_module *m = (struct kyu_module *)b;
+
+        names_b  = sx_set_add   (names_b, m->name);
+        svcn_b   = m->provides;
+        after_b  = sx_set_merge (m->after, m->requires);
+        before_b = m->before;
+    }
+    else if (kservicep (b))
+    {
+        struct kyu_service *s = (struct kyu_service *)b;
+
+        for (c = s->modules; consp (c); c = cdr (c))
+        {
+            struct kyu_module *m = (struct kyu_module *)car(c);
+
+            names_b  = sx_set_add   (names_b,  m->name);
+            svcn_b   = sx_set_merge (svcn_b,   m->provides);
+            after_b  = sx_set_merge (after_b,  m->after);
+            after_b  = sx_set_merge (after_b,  m->requires);
+            before_b = sx_set_merge (before_b, m->before);
+        }
+    }
+
+    for (c = after_b; consp (c); c = cdr (c))
+    {
+        ca = car (c);
+
+      retry_a_b:
+        if (symbolp (ca))
+        {
+            if (truep (sx_set_rx_memberp (names_a, ca)))
+            {
+                return sx_false;
+            }
+        }
+        else if (stringp (ca))
+        {
+            if (truep (sx_set_rx_memberp (svcn_a, ca)))
+            {
+                return sx_false;
+            }
+        }
+        else if (consp (ca) && truep (sx_set_rx_memberp (system_a, car(ca))))
+        {
+          goto retry_a_b;
+            ca = cdr (ca);
+        }
+    }
+
+    for (c = after_a; consp (c); c = cdr (c))
+    {
+        ca = car (c);
+
+      retry_a_a:
+        if (symbolp (ca))
+        {
+            if (truep (sx_set_rx_memberp (names_b, ca)))
+            {
+                return sx_true;
+            }
+        }
+        else if (stringp (ca))
+        {
+            if (truep (sx_set_rx_memberp (svcn_b, ca)))
+            {
+                return sx_true;
+            }
+        }
+        else if (consp (ca) && truep (sx_set_rx_memberp (system_b, car(ca))))
+        {
+          goto retry_a_a;
+            ca = cdr (ca);
+        }
+    }
+
+    for (c = before_a; consp (c); c = cdr (c))
+    {
+        ca = car (c);
+
+      retry_b_a:
+        if (symbolp (ca))
+        {
+            if (truep (sx_set_rx_memberp (names_b, ca)))
+            {
+                return sx_false;
+            }
+        }
+        else if (stringp (ca))
+        {
+            if (truep (sx_set_rx_memberp (svcn_b, ca)))
+            {
+                return sx_false;
+            }
+        }
+        else if (consp (ca) && truep (sx_set_rx_memberp (system_b, car(ca))))
+        {
+          goto retry_b_a;
+            ca = cdr (ca);
+        }
+    }
+
+    for (c = before_b; consp (c); c = cdr (c))
+    {
+        ca = car (c);
+
+      retry_b_b:
+        if (symbolp (ca))
+        {
+            if (truep (sx_set_rx_memberp (names_a, ca)))
+            {
+                return sx_true;
+            }
+        }
+        else if (stringp (ca))
+        {
+            if (truep (sx_set_rx_memberp (svcn_a, ca)))
+            {
+                return sx_true;
+            }
+        }
+        else if (consp (ca) && truep (sx_set_rx_memberp (system_a, car(ca))))
+        {
+          goto retry_b_b;
+            ca = cdr (ca);
+        }
+    }
+
+    return sx_false;
+}
+
 /* this function should gather a list of services whose status should get
  * modified according to the mode we're currently switching to.
  *
@@ -598,6 +822,7 @@ static sexpr reschedule ( void )
           seen = to_enable,
           to_disable = reschedule_get_disable
               (target_mode_disable);
+    int pc;
 
     c = to_enable;
 
@@ -651,6 +876,88 @@ static sexpr reschedule ( void )
         c = cdr (c);
     }
 
+    pc = 0;
+
+    for (c = to_enable; consp (c); c = cdr (c))
+    {
+        a = car (c);
+
+        if (truep (flagp (a, sym_enabling)))
+        {
+            to_enable = sx_set_remove (to_enable, a);
+            pc++;
+        }
+    }
+
+    seen = sx_set_sort_merge (seen, sort_modules_and_services);
+
+    /* intersecting sx_enable with the sorted version of seen indirectly sorts
+     * to_enable as well, since sx_set_intersect will just go over the second
+     * argument and add any elements that appear in the first. the intersection
+     * does, however, indirectly reverse the order of the second argument, thus
+     * the sx_reverse. */
+    to_enable = sx_reverse (sx_set_intersect (to_enable, seen));
+
+    r = to_enable;
+
+    /* remove all things in the list of stuff to enable that should be scheduled
+     * after previous stuff in the list... */
+    for (c = to_enable; consp (c); c = cdr (c))
+    {
+        ca = car (c);
+
+        for (a = seen; consp (a); a = cdr (a))
+        {
+            aa = car (a);
+
+            if (truep (sort_modules_and_services (ca, aa)) &&
+                falsep (flagp (aa, sym_enabled)) &&
+                falsep (flagp (aa, sym_blocked)))
+            {
+                to_enable = sx_set_remove (to_enable, ca);
+
+                break;
+            }
+        }
+    }
+
+    if (eolp (to_enable) && (pc == 0))
+    {
+        /* okay, seems like we have a pretty twocked scheduling situation...
+         * looks like someone was overzealous with their before/after specs...
+         */
+
+        to_enable = r;
+
+        for (c = to_enable; consp (c); c = cdr (c))
+        {
+            ca = car (c);
+
+            for (a = to_enable; consp (a); a = cdr (a))
+            {
+                aa = car (a);
+
+                if (truep (sort_modules_and_services (ca, aa)) &&
+                    falsep (flagp (aa, sym_enabled)) &&
+                    falsep (flagp (aa, sym_blocked)))
+                {
+                    to_enable = sx_set_remove (to_enable, ca);
+
+                    break;
+                }
+            }
+        }
+
+        if (eolp (to_enable))
+        {
+            /* ... WAY overzealous... */
+
+            to_enable = r;
+        }
+    }
+
+    /* now for disabling things... */
+
     c = seen = to_disable;
 
     while (consp (c))
@@ -692,12 +999,78 @@ static sexpr reschedule ( void )
         c = cdr (c);
     }
 
+    pc = 0;
+
+    for (c = to_disable; consp (c); c = cdr (c))
+    {
+        a = car (c);
+
+        if (truep (flagp (a, sym_disabling)))
+        {
+            to_disable = sx_set_remove (to_disable, a);
+            pc++;
+        }
+    }
+
+    /* sorting to disable is in reverse order of enabling */
+    seen = sx_reverse(sx_set_sort_merge (seen, sort_modules_and_services));
+    to_disable = sx_reverse (sx_set_intersect (to_disable, seen));
+
+    r = to_disable;
+    
+    for (c = to_disable; consp (c); c = cdr (c))
+    {
+        ca = car (c);
+
+        for (a = seen; consp (a); a = cdr (a))
+        {
+            aa = car (a);
+
+            if (falsep (sort_modules_and_services (ca, aa)) &&
+                truep (flagp (aa, sym_enabled)))
+            {
+                to_disable = sx_set_remove (to_disable, ca);
+
+                break;
+            }
+        }
+    }
+
+    if (eolp (to_disable) && (pc == 0))
+    {
+        to_disable = r;
+
+        for (c = to_disable; consp (c); c = cdr (c))
+        {
+            ca = car (c);
+
+            for (a = to_disable; consp (a); a = cdr (a))
+            {
+                aa = car (a);
+
+                if (falsep (sort_modules_and_services (ca, aa)) &&
+                    truep (flagp (aa, sym_enabled)))
+                {
+                    to_disable = sx_set_remove (to_disable, ca);
+
+                    break;
+                }
+            }
+        }
+
+        if (eolp (to_disable))
+        {
+           to_disable = r;
+        }
+    }
+
+    /* end disabling, now actually go and do shit */
+
     if (!eolp (unresolved))
     {
         kyu_command (cons (sym_unresolved, cons (unresolved, sx_end_of_list)));
     }
 
-#warning after/before sorting is currently being ignored in reschedule()
 #warning conflict specifications are currently completely ignored
 
     while (consp (to_enable))
@@ -917,17 +1290,21 @@ static sexpr compile_list (sexpr l)
 
         if (symbolp (la))
         {
-            r = cons (cons (native_system, la), r);
+            r = cons (cons (rx_compile_sx (sym_any_rx), la), r);
         }
         if (stringp (la))
         {
-            r = cons (cons (native_system, cons (la, rx_compile_sx (la))), r);
+            r = cons (cons (rx_compile_sx (sym_any_rx),
+                            cons (la, rx_compile_sx (la))),
+                      r);
         }
         else if consp (la)
         {
             sexpr d = cdr (la);
 
-            r = cons (cons (car(la), cons (d, rx_compile_sx(d))), r);
+            r = cons (cons (rx_compile_sx (car(la)),
+                            cons (la, rx_compile_sx(d))),
+                      r);
         }
 
         l = cdr (l);

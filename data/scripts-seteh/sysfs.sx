@@ -2,14 +2,13 @@
 ; vim:ft=lisp
 ;;
 
-(init-script s-proc "Filesystem: /proc"
-  (provides "fs-proc")
-;  (after "fs-sys")
+(init-script s-sys "Filesystem: /sys"
+  (provides "fs-sys")
   (schedule-limitations once-per-host)
   (io-type log)
   (functions
     (start
-      (run "mount" "-t" "proc" "procfs" "/proc")
+      (run "mount" "-t" "sysfs" "sysfs" "/sys")
       (run "sleep" "5")
       #t)
     (stop
