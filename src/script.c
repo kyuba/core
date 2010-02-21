@@ -153,7 +153,9 @@ sexpr kyu_sx_default_environment ( void )
                  cons (cons (sym_kill_subprocesses,
                              lx_foreign_mu (sym_kill_subprocesses,
                                             kyu_sc_kill_subprocesses)),
-                       sx_end_of_list)))))));
+                 cons (cons (sym_out,
+                             lx_foreign_mu (sym_out, kyu_sc_out)),
+                       sx_end_of_list))))))));
     }
 
     return env;
@@ -433,6 +435,34 @@ sexpr kyu_sc_kill_subprocesses (sexpr arguments, struct machine_state *state)
 #warning kyu_sc_kill_subprocesses() not implemented yet
 
         return make_integer(0);
+    }
+}
+
+sexpr kyu_sc_out (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_out,
+                                    kyu_sc_out), state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+        sexpr src = lx_environment_lookup (state->environment, sym_source);
+
+        if (nexp (src))
+        {
+            kyu_command (cons (sym_event,
+                               cons (sym_out, cons (src, arguments))));
+        }
+        else
+        {
+            kyu_command (cons (sym_event, cons (sym_out, arguments)));
+        }
+
+        return sx_nil;
     }
 }
 

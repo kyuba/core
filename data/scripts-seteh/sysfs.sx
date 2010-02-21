@@ -9,7 +9,6 @@
   (functions
     (start
       (run "mount" "-t" "sysfs" "sysfs" "/sys")
-      (run "sleep" "5")
       #t)
     (stop
       #t)))

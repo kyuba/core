@@ -37,7 +37,6 @@
 
 define_symbol (sym_initialise,           "initialise");
 define_symbol (sym_server_seteh,         "server-seteh");
-define_symbol (sym_source,               "source");
 define_symbol (sym_server,               "server");
 define_symbol (sym_binary_not_found,     "binary-not-found");
 define_symbol (sym_schedule_limitations, "schedule-limitations");
@@ -300,7 +299,7 @@ static sexpr action_dispatch
 static sexpr handle_action
     (struct kyu_module *mod, sexpr action)
 {
-    sexpr act = lx_environment_lookup (mod_functions, mod->name), c, a;
+    sexpr act = lx_environment_lookup (mod_functions, mod->name), c, a, e;
 
     if (nexp (act))
     {
@@ -316,6 +315,8 @@ static sexpr handle_action
 
         if (truep (equalp (car (a), action)))
         {
+            e = lx_environment_unbind (global_environment, sym_source);
+            e = lx_environment_bind   (e,       sym_source, (sexpr)mod);
             lx_eval (cons (cons (sym_action_dispatch,
                               cons (cons (mod->name, action),
                                     cons (cdr (a),
@@ -323,8 +324,7 @@ static sexpr handle_action
                                                 cons (mod->name,
                                                       sx_end_of_list)),
                                           sx_end_of_list)))),
-                           sx_end_of_list),
-                     global_environment);
+                           sx_end_of_list), e);
 
             return sx_true;
         }

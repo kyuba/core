@@ -35,7 +35,6 @@
 
 define_symbol (sym_initialise,           "initialise");
 define_symbol (sym_server_job,           "server-job");
-define_symbol (sym_source,               "source");
 define_symbol (sym_server,               "server");
 define_symbol (sym_binary_not_found,     "binary-not-found");
 define_symbol (sym_schedule_limitations, "schedule-limitations");

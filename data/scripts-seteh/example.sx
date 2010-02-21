@@ -4,7 +4,6 @@
 
 (init-script s-example "Example Init Script"
   (provides "example")
-  (requires "udev")
   (after "fs-.*")
   (schedule-limitations once-per-host)
   (io-type none)

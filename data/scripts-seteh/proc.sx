@@ -4,13 +4,11 @@
 
 (init-script s-proc "Filesystem: /proc"
   (provides "fs-proc")
-;  (after "fs-sys")
   (schedule-limitations once-per-host)
   (io-type log)
   (functions
     (start
       (run "mount" "-t" "proc" "procfs" "/proc")
-      (run "sleep" "5")
       #t)
     (stop
       #t)))

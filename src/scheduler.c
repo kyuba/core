@@ -59,6 +59,7 @@ define_symbol (sym_unresolved,           "unresolved");
 define_symbol (sym_blocked,              "blocked");
 define_symbol (sym_action,               "action");
 define_symbol (sym_any_rx,               ".*");
+define_symbol (sym_extra_scheduler_data, "extra-scheduler-data");
 
 static sexpr system_data,
              current_mode         = sx_nonexistent,
@@ -66,6 +67,8 @@ static sexpr system_data,
              target_mode_enable   = sx_end_of_list,
              target_mode_disable  = sx_end_of_list,
              target_mode_ipc      = sx_end_of_list,
+             target_extra_enable  = sx_end_of_list,
+             target_extra_disable = sx_end_of_list,
              mode_specifications  = sx_nonexistent;
 static int currently_initialising = 0;
 
@@ -1069,6 +1072,7 @@ static sexpr reschedule ( void )
     if (!eolp (unresolved))
     {
         kyu_command (cons (sym_unresolved, cons (unresolved, sx_end_of_list)));
+        rv = sx_true;
     }
 
 #warning conflict specifications are currently completely ignored
@@ -1342,25 +1346,41 @@ static void reevaluate_target_data ( void )
 {
     sexpr t;
 
-    kyu_command (cons (sym_reevaluating_mode,
-                       cons (target_mode, sx_end_of_list)));
-
-    if (!truep(t = rebuild_target_data ()))
+    if (nilp (target_mode))
     {
-        kyu_command (t);
-        return;
-    }
+        target_mode_ipc     = sx_end_of_list;
+        target_mode_enable  = compile_list (target_extra_enable);
+        target_mode_disable = compile_list (target_extra_disable);
 
-    if (falsep (reschedule ()))
-    {
-        if (falsep(equalp(current_mode, target_mode)))
+        if (falsep (reschedule()))
         {
-            current_mode = target_mode;
-            kyu_command (cons (sym_mode, cons (target_mode, sx_end_of_list)));
+            target_extra_enable  = sx_end_of_list;
+            target_extra_disable = sx_end_of_list;
+        }
+    }
+    else
+    {
+        if (!truep(t = rebuild_target_data ()))
+        {
+            kyu_command (t);
+            return;
+        }
 
-            for (t = target_mode_ipc; consp (t); t = cdr (t))
+        if (falsep (reschedule ()))
+        {
+            if (falsep(equalp(current_mode, target_mode)))
             {
-                kyu_command (car(t));
+                current_mode = target_mode;
+                kyu_command (cons (sym_mode, cons (target_mode, sx_end_of_list)));
+
+                for (t = target_mode_ipc; consp (t); t = cdr (t))
+                {
+                    kyu_command (car(t));
+                }
+
+                target_mode = sx_nil;
+                
+                reevaluate_target_data ();
             }
         }
     }
@@ -1522,6 +1542,48 @@ static void on_event (sexpr sx, void *aux)
         else if (truep (equalp (a, sym_switch)))
         {
             switch_mode (car (cdr (sx)));
+        }
+        else if (truep (equalp (a, sym_enable)))
+        {
+            sx = cdr (sx);
+
+            target_extra_enable
+                    = sx_set_merge  (target_extra_enable,  sx);
+
+            while (consp (sx))
+            {
+                target_extra_disable
+                    = sx_set_remove (target_extra_disable, car (sx));
+                sx = cdr (sx);
+            }
+
+            kyu_command (cons (sym_extra_scheduler_data,
+                               cons (target_extra_enable,
+                                     cons (target_extra_disable,
+                                           sx_end_of_list))));
+
+            reevaluate_target_data();
+        }
+        else if (truep (equalp (a, sym_disable)))
+        {
+            sx = cdr (sx);
+
+            target_extra_disable
+                    = sx_set_merge  (target_extra_disable, sx);
+
+            while (consp (sx))
+            {
+                target_extra_enable
+                    = sx_set_remove (target_extra_enable, car (sx));
+                sx = cdr (sx);
+            }
+
+            kyu_command (cons (sym_extra_scheduler_data,
+                               cons (target_extra_enable,
+                                     cons (target_extra_disable,
+                                           sx_end_of_list))));
+
+            reevaluate_target_data ();
         }
     }
 }

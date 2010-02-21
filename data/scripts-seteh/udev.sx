@@ -3,9 +3,8 @@
 ;;
 
 (daemon s-udev "UDEV daemon"
-  (provides "udev" "fs-udev")
-  (requires "fs-proc" "fs-sys")
-  (before ".*")
+  (provides "fs-dev")
+  (after "fs-(proc|sys)")
   (schedule-limitations once-per-host)
   (functions 
     (start
