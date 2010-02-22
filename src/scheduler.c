@@ -1075,7 +1075,8 @@ static sexpr reschedule ( void )
         rv = sx_true;
     }
 
-#warning conflict specifications are currently completely ignored
+    /*! \todo conflict specifications are currently ignored */
+    /*! \todo scheduler hints are currently ignored */
 
     while (consp (to_enable))
     {

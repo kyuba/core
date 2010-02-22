@@ -33,6 +33,10 @@
 #include <syscall/syscall.h>
 #include <kyuba/ipc.h>
 
+static void on_event (sexpr sx, void *aux)
+{
+}
+
 int cmain()
 {
     define_symbol (sym_ipc_hub, "ipc-hub");
@@ -47,7 +51,7 @@ int cmain()
 
     multiplex_kyu ();
 
-    kyu_sd_add_listener_stdio ();
+    multiplex_add_kyu_stdio (on_event, (void *)0);
     multiplex_add_socket_sx (socket, kyu_sd_sx_queue_connect, (void *)0);
 
 #if defined(have_sys_chmod)

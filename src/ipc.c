@@ -26,13 +26,17 @@
  * THE SOFTWARE.
 */
 
+#include <curie/main.h>
 #include <curie/memory.h>
 #include <curie/multiplex.h>
 #include <curie/network.h>
+#include <curie/regex.h>
+
 #include <kyuba/ipc.h>
 
-sexpr native_system            = sx_nil;
-sexpr programme_identification = sx_nil;
+sexpr native_system                       = sx_nil;
+sexpr programme_identification            = sx_nil;
+void (*cleanup_on_termination_request) () = (void (*)())0;
 
 struct kaux
 {
@@ -61,6 +65,34 @@ static void on_ipc_read (sexpr sx)
         {
             kyu_command (cons (sym_status, cons (native_system, cons
                            (programme_identification, sx_end_of_list))));
+        }
+        else if (truep (equalp (a, sym_terminate)))
+        { /* figure out if we're supposed to terminate */
+            sexpr ns = car (cdr (sx)),
+                  pi = programme_identification, rx;
+
+            if (truep (equalp (ns, native_system)))
+            {
+                sx = cdr (sx);
+                rx = rx_compile_sx (car (cdr (sx)));
+
+                if (consp (pi))
+                {
+                   pi = car (pi);
+                }
+
+                if (truep (rx_match_sx (rx, pi)))
+                {
+                    if (cleanup_on_termination_request)
+                    {
+                        cleanup_on_termination_request ();
+                    }
+
+                    kyu_disconnect ();
+
+                    cexit (0);
+                }
+            }
         }
     }
 

@@ -63,6 +63,7 @@ define_symbol (sym_status,             "status");
 define_symbol (sym_kill_subprocesses,  "kill-subprocesses");
 define_symbol (sym_out,                "out");
 define_symbol (sym_source,             "source");
+define_symbol (sym_terminate,          "terminate");
 
 void initialise_kyu_script_commands ( void );
 

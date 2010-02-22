@@ -41,7 +41,7 @@ extern "C" {
 void  multiplex_kyu                ();
 
 void  multiplex_add_kyu_sexpr      (struct sexpr_io *,
-                                   void (*on_event)(sexpr, void *), void *aux);
+                                    void (*on_event)(sexpr, void *), void *aux);
 void  multiplex_add_kyu_stdio      (void (*on_event)(sexpr, void *), void *aux);
 void  multiplex_add_kyu_default    (void (*on_event)(sexpr, void *), void *aux);
 void  multiplex_add_kyu_callback   (void (*on_event)(sexpr, void *), void *aux);
@@ -57,6 +57,8 @@ sexpr kyu_get_configuration        (sexpr id, sexpr key);
 extern sexpr native_system;
 
 extern sexpr programme_identification;
+
+void (*cleanup_on_termination_request) ();
 
 #ifdef __cplusplus
 }

@@ -3,24 +3,31 @@
 ;;
 
 (on-event power-on
-  (keep-alive "kyu-server-configuration" "data/configuration/.*\\.sx")
+  (keep-alive server-configuration
+              "kyu-server-configuration" "data/configuration/.*\\.sx")
 
-  (keep-alive "ipc-hub")
+  (keep-alive ipc-hub
+              "ipc-hub")
 
-  (keep-alive "kyu-server-job"))
+  (keep-alive server-job
+              "kyu-server-job"))
 
 (on-event ctrl-alt-del
-  (power-reset))
+  (kill-subprocesses "(server-configuration|ipc-hub|server-job)")
+
+  (run #f "echo" "power-reset, nao")
+  
+  (exit 0))
 
 (on-event power-reset
-  (kill-subprocesses "(kyu-server-configuration|ipc-hub|kyu-server-job)")
+  (kill-subprocesses "(server-configuration|ipc-hub|server-job)")
 
   (run #f "echo" "power-reset, nao")
   
   (exit 0))
 
 (on-event power-down
-  (kill-subprocesses "(kyu-server-configuration|ipc-hub|kyu-server-job)")
+  (kill-subprocesses "(server-configuration|ipc-hub|server-job)")
 
   (run #f "echo" "power-down, nao")
   

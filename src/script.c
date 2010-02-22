@@ -27,11 +27,12 @@
 */
 
 #include <curie/main.h>
-#include <curie/sexpr.h>
 #include <curie/multiplex.h>
 #include <curie/memory.h>
 
 #include <sievert/shell.h>
+#include <sievert/sexpr.h>
+
 #include <kyuba/ipc.h>
 
 struct open_cfg_requests
@@ -42,8 +43,17 @@ struct open_cfg_requests
     struct open_cfg_requests *next;
 };
 
-static sexpr configuration_data;
+struct termination_meta
+{
+    sexpr regex;
+    sexpr continuation;
+    struct termination_meta *next;
+};
+
+static sexpr configuration_data = sx_end_of_list;
 static struct open_cfg_requests *open_cfg_requests = (void *)0;
+static struct termination_meta  *termination_meta = (void *)0;
+static sexpr running_processes  = sx_end_of_list;
 
 static void script_command_callback (sexpr sx, void *aux)
 {
@@ -171,8 +181,6 @@ static void on_death (struct exec_context *ctx, void *u)
     nstate = lx_make_state (cons (rv, sx_end_of_list), stu->environment,
                             stu->code, stu->dump);
 
-//    kyu_sd_write_to_all_listeners (nstate, (void *)0);
-
     free_exec_context (ctx);
 
     lx_continue (nstate);
@@ -180,11 +188,58 @@ static void on_death (struct exec_context *ctx, void *u)
 
 static void on_death_respawn (struct exec_context *ctx, void *u)
 {
+    sexpr name = car (u);
+    struct termination_meta *cur = termination_meta;
+    struct termination_meta **p  = &termination_meta;
+    int respawn = ~0;
+
     free_exec_context (ctx);
 
-//    kyu_sd_write_to_all_listeners ((sexpr)u, (sexpr)0);
+    if (falsep (name))
+    {
+        name = car (cdr (u));
+    }
 
-    kyu_sc_keep_alive ((sexpr)u, (void *)sx_end_of_list);
+    while (cur != (void *)0)
+    {
+        if (truep (sx_set_rx_memberp (running_processes, cur->regex)))
+        {
+            respawn = 0;
+            break;
+        }
+
+        cur = cur->next;
+    }
+
+    cur = termination_meta;
+
+    running_processes = sx_set_remove (running_processes, name);
+
+    while (cur != (void *)0)
+    {
+        if (falsep (sx_set_rx_memberp (running_processes, cur->regex)))
+        {
+            struct machine_state *stu
+                = (struct machine_state *)(cur->continuation);
+
+            *p  = cur->next;
+            cur = *p;
+
+            lx_continue
+                (lx_make_state (cons (sx_true, sx_end_of_list),
+                 stu->environment, stu->code, stu->dump));
+
+            continue;
+        }
+
+        p   = &(cur->next);
+        cur = cur->next;
+    }
+
+    if (respawn)
+    {
+        kyu_sc_keep_alive ((sexpr)u, (void *)sx_end_of_list);
+    }
 }
 
 static struct exec_context *sc_run_x (sexpr sx)
@@ -192,7 +247,7 @@ static struct exec_context *sc_run_x (sexpr sx)
     sexpr cur = sx;
     unsigned int length = 0;
     char do_io = 1;
-    define_symbol (sym_launch_with_io, "launch-with-io");
+    define_symbol (sym_launch_with_io,    "launch-with-io");
     define_symbol (sym_launch_without_io, "launch-without-io");
 
     if (falsep (car (sx)))
@@ -209,7 +264,13 @@ static struct exec_context *sc_run_x (sexpr sx)
 
     while (consp(cur))
     {
-        length++;
+        sexpr c = car (cur);
+
+        if (stringp (c))
+        {
+            length++;
+        }
+
         cur = cdr(cur);
     }
 
@@ -223,21 +284,26 @@ static struct exec_context *sc_run_x (sexpr sx)
         while (consp(cur))
         {
             sexpr c = car(cur);
-            const char *s = sx_string(c);
-            if ((i == 0) && (s[0] != '/'))
+
+            if (stringp (c))
             {
-                c = which (c);
-                if (falsep (c))
+                const char *s = sx_string(c);
+                if ((i == 0) && (s[0] != '/'))
                 {
-                    return (struct exec_context *)0;
+                    c = which (c);
+                    if (falsep (c))
+                    {
+                        return (struct exec_context *)0;
+                    }
+                    x[0] = (char *)sx_string(c);
                 }
-                x[0] = (char *)sx_string(c);
+                else
+                {
+                    x[i] = (char *)s;
+                }
+                i++;
             }
-            else
-            {
-                x[i] = (char *)s;
-            }
-            i++;
+
             cur = cdr(cur);
         }
         x[i] = (char *)0;
@@ -320,6 +386,8 @@ sexpr kyu_sc_keep_alive (sexpr arguments, struct machine_state *state)
     else
     {
         struct exec_context *c = sc_run_x (arguments);
+    
+        running_processes = sx_set_add (running_processes, car (arguments));
 
         if (c != (struct exec_context *)0)
         {
@@ -432,9 +500,35 @@ sexpr kyu_sc_kill_subprocesses (sexpr arguments, struct machine_state *state)
     }
     else
     {
-#warning kyu_sc_kill_subprocesses() not implemented yet
+        sexpr rx = car (arguments);
+        static struct memory_pool pool
+                = MEMORY_POOL_INITIALISER (sizeof (termination_meta));
+        struct termination_meta *m;
 
-        return make_integer(0);
+        if (falsep (sx_set_rx_memberp (running_processes, rx)))
+        {
+            return make_integer (0);
+        }
+
+        m = (struct termination_meta *)get_pool_mem (&pool);
+
+        m->regex           = rx;
+        m->continuation    = lx_make_state
+                (sx_end_of_list, sx_end_of_list, sx_end_of_list, state->dump);
+        m->next            = termination_meta;
+
+        termination_meta   = m;
+
+        kyu_command (cons (sym_terminate,
+                           cons (native_system,
+                                 cons (rx, sx_end_of_list))));
+
+        state->stack       = sx_end_of_list;
+        state->environment = sx_end_of_list;
+        state->code        = sx_end_of_list;
+        state->dump        = sx_end_of_list;
+
+        return sx_nil;
     }
 }
 
