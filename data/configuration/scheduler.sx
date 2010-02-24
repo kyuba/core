@@ -29,9 +29,13 @@
 ; integer, this allows for specific implicit affinities to be ignored).
 ;
 ; Currently, the implicit affinities are:
-;   * specification in current mode data matches module (+1 or +0)
+;   * specification in current mode data matches module (+1 or 0)
 ;   * number of provided services (+1 per service)
 ;   * number of requirements (-1 per requirement)
+;   * "deprecated" flag (-1 or 0)
+;   * "stable" flag (+1 or 0)
+;   * "experimental" flag (+1 or 0)
+;   * "problematic" flag (-1 or 0)
 ;
 ; Multipliers are specified for this in that same order. Omitted values are seen
 ; as zeroes. This allows for easy, deterministic extension of the feature in the
@@ -45,6 +49,6 @@
     ((core . s-example) . -10)) ; it's from the core namespace, then it gets -5
 
   (implicit-affinity-multipliers
-    50 2 1))                    ; assume specific mentions are quite important,
+    50 2 1 5 1 -1 2))           ; assume specific mentions are quite important,
                                 ; otherwise kind of favour things that provide
                                 ; much but use little
