@@ -1297,7 +1297,7 @@ static sexpr compile_list (sexpr l)
         {
             r = cons (cons (rx_compile_sx (sym_any_rx), la), r);
         }
-        if (stringp (la))
+        else if (stringp (la))
         {
             r = cons (cons (rx_compile_sx (sym_any_rx),
                             cons (la, rx_compile_sx (la))),

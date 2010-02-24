@@ -33,9 +33,16 @@
 #include <seteh/lambda.h>
 #include <kyuba/ipc.h>
 
-define_symbol (sym_bind, "bind");
+define_symbol (sym_bind,                   "bind");
+define_symbol (sym_flush_configuration,    "flush-configuration");
+define_symbol (sym_configuration_reloaded, "configuration-reloaded");
 
-static sexpr data;
+static sexpr        data;
+static unsigned int open_files = 0;
+
+static void on_event (sexpr sx, void *aux);
+static void on_configuration_read (sexpr sx, struct sexpr_io *io, void *aux);
+static void read_configuration ();
 
 static void on_event (sexpr sx, void *aux)
 {
@@ -57,6 +64,12 @@ static void on_event (sexpr sx, void *aux)
                              sx_end_of_list)))));
             }
         }
+        else if (truep (equalp (a, sym_flush_configuration)))
+        {
+            data = lx_make_environment (sx_end_of_list);
+
+            read_configuration();
+        }
     }
 }
 
@@ -64,7 +77,7 @@ static void on_configuration_read (sexpr sx, struct sexpr_io *io, void *aux)
 {
     if (consp (sx))
     {
-        sexpr a = car (sx);
+        sexpr a = car (sx), v;
 
         if (truep (equalp (a, sym_bind)))
         {
@@ -72,8 +85,26 @@ static void on_configuration_read (sexpr sx, struct sexpr_io *io, void *aux)
             a  = car (sx);
             sx = cdr (sx);
 
-            data = lx_environment_unbind (data, a);
-            data = lx_environment_bind   (data, a, lx_make_environment (sx));
+            v = lx_environment_lookup (data, a);
+            if (nexp (v))
+            {
+                data = lx_environment_bind (data, a, lx_make_environment (sx));
+            }
+            else
+            {
+                data = lx_environment_unbind (data, a);
+                v    = lx_environment_join   (v,    sx);
+                data = lx_environment_bind   (data, a, v);
+            }
+        }
+    }
+    else if (eofp (sx))
+    {
+        open_files--;
+
+        if (open_files == (unsigned int)0)
+        {
+            kyu_command (cons (sym_configuration_reloaded, sx_end_of_list));
         }
     }
 }
@@ -91,6 +122,8 @@ static void read_configuration ()
             sexpr fname = car (files);
             const char *n = sx_string (fname);
             struct sexpr_io *io = sx_open_i (io_open_read(n));
+
+            open_files++;
 
             multiplex_add_sexpr (io, on_configuration_read, (void *)0);
 

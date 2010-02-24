@@ -1,0 +1,28 @@
+;;
+; vim:ft=lisp
+;
+; This file is used to configure kyuba's scheduler. The scheduler doesn't have
+; very many options, and it probably won't be getting too many in the future
+; either, so it's up to you to merge this with the modes.sx file.
+;
+; There is one important option that you might want to modify yourself: module
+; affinity. Basically, this parameter allows you to tell the scheduler whether
+; you'd like it to prefer certain modules (daemons, init scripts, ...) over
+; others when trying to resolve dependencies and for some dependencies there is
+; more than one option.
+;
+; It works as follows: the module affinity is basically a list of atoms that
+; describe modules or services, just like in modes.sx, followed by a numerical
+; affinity for anything that matches that atom. To calculate the total affinity
+; for each module, the list is traversed and each atom that matches up has the
+; accompanying affinity added to its current affinity, starting at 0. Finally,
+; for each service, the order in which modules are tried is determined by
+; comparing the individual affinties and trying each module from highest to
+; lowest affinity.
+;
+;;
+
+(bind scheduler
+  (module-affinity              ; module affinities; see above for details
+    (s-example . 5)             ; example affinity: s-example gets +5, unless
+    ((core s-example) . -10)))  ; it's from the core namespace, then it gets -5 
