@@ -1303,7 +1303,7 @@ static sexpr compile_list (sexpr l)
                             cons (la, rx_compile_sx (la))),
                       r);
         }
-        else if consp (la)
+        else if (consp (la))
         {
             sexpr d = cdr (la);
 

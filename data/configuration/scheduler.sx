@@ -3,7 +3,7 @@
 ;
 ; This file is used to configure kyuba's scheduler. The scheduler doesn't have
 ; very many options, and it probably won't be getting too many in the future
-; either, so it's up to you to merge this with the modes.sx file.
+; either, but the options should nevertheless prove useful.
 ;
 ; There is one important option that you might want to modify yourself: module
 ; affinity. Basically, this parameter allows you to tell the scheduler whether
@@ -20,9 +20,28 @@
 ; comparing the individual affinties and trying each module from highest to
 ; lowest affinity.
 ;
+; Also potentially interesting: the implicit module affinity multipliers.
+; Sounds tricky, but really it's easy: the scheduler will give certain automatic
+; affinities to some modules, based on things such as the current mode, number
+; of provided services, number of requirements, etc. The configurable part of
+; this process is to give the scheduler a set of integers that serve as
+; multipliers to the values the scheduler generates (and since 0 is also an
+; integer, this allows for specific implicit affinities to be ignored).
+;
+; Currently, the implicit affinities are:
+;   * specification in current mode data matches module (+1 or +0)
+;   * number of provided services (+1 per service)
+;   * number of requirements (-1 per requirement)
+;
+; Multipliers are specified for this in that same order. Omitted values are seen
+; as zeroes. This allows for easy, deterministic extension of the feature in the
+; future.
+;
 ;;
 
 (bind scheduler
   (module-affinity              ; module affinities; see above for details
     (s-example . 5)             ; example affinity: s-example gets +5, unless
-    ((core s-example) . -10)))  ; it's from the core namespace, then it gets -5 
+    ((core . s-example) . -10)) ; it's from the core namespace, then it gets -5
+  (implicit-affinity-multipliers
+    0 0 0))                     ; disable implicit affinities
