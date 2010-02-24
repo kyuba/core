@@ -40,8 +40,11 @@
 ;;
 
 (bind scheduler
-  (module-affinity              ; module affinities; see above for details
+  (affinity                     ; module affinities; see above for details
     (s-example . 5)             ; example affinity: s-example gets +5, unless
     ((core . s-example) . -10)) ; it's from the core namespace, then it gets -5
+
   (implicit-affinity-multipliers
-    0 0 0))                     ; disable implicit affinities
+    50 2 1))                    ; assume specific mentions are quite important,
+                                ; otherwise kind of favour things that provide
+                                ; much but use little
