@@ -60,17 +60,32 @@ define_symbol (sym_blocked,              "blocked");
 define_symbol (sym_action,               "action");
 define_symbol (sym_any_rx,               ".*");
 define_symbol (sym_extra_scheduler_data, "extra-scheduler-data");
+define_symbol (sym_affinity,             "affinity");
+define_symbol (sym_implicit_affinity_multipliers,
+                                         "implicit-affinity-multipliers");
+define_symbol (sym_stable,               "stable");
+define_symbol (sym_experimental,         "experimental");
+define_symbol (sym_deprecated,           "deprecated");
+define_symbol (sym_problematic,          "problematic");
 
 static sexpr system_data,
-             current_mode         = sx_nonexistent,
-             target_mode          = sx_nonexistent,
-             target_mode_enable   = sx_end_of_list,
-             target_mode_disable  = sx_end_of_list,
-             target_mode_ipc      = sx_end_of_list,
-             target_extra_enable  = sx_end_of_list,
-             target_extra_disable = sx_end_of_list,
-             mode_specifications  = sx_nonexistent;
-static int currently_initialising = 0;
+             current_mode           = sx_nonexistent,
+             target_mode            = sx_nonexistent,
+             target_mode_enable     = sx_end_of_list,
+             target_mode_disable    = sx_end_of_list,
+             target_mode_ipc        = sx_end_of_list,
+             target_extra_enable    = sx_end_of_list,
+             target_extra_disable   = sx_end_of_list,
+             mode_specifications    = sx_nonexistent;
+static int currently_initialising   = 0;
+static int ia_m_in_mode             = 1;
+static int ia_m_num_of_provides     = 1;
+static int ia_m_num_of_requirements = 1;
+static int ia_m_deprecated          = 1;
+static int ia_m_stable              = 1;
+static int ia_m_experimental        = 1;
+static int ia_m_problematic         = 1;
+static sexpr affinities             = sx_end_of_list;
 
 static void merge_mode (sexpr mode);
 static sexpr compile_list (sexpr l);
@@ -1121,6 +1136,161 @@ static sexpr reschedule ( void )
     return rv;
 }
 
+/* calculate affinity for a given module */
+static int get_affinity (sexpr sx)
+{
+    int rv = 0, t;
+    struct kyu_module *m;
+    sexpr c;
+
+    if (kmodulep (sx))
+    {
+        m = (struct kyu_module *)sx;
+
+#warning get_affinity() still ignores the global affinity spec list
+
+        if (ia_m_in_mode != (int)0)
+        {
+#warning get_affinity() still ignores current mode data for implicit affinities
+        }
+
+        if (ia_m_num_of_provides != (int)0)
+        {
+            for (t = 0, c = m->provides; consp (c) ; c = cdr (c))
+            {
+                t++;
+            }
+
+            rv += (t * ia_m_num_of_provides);
+        }
+
+        if (ia_m_num_of_requirements != (int)0)
+        {
+            for (t = 0, c = m->requires; consp (c) ; c = cdr (c))
+            {
+                t++;
+            }
+
+            rv -= (t * ia_m_num_of_requirements);
+        }
+
+        if (ia_m_deprecated != (int)0)
+        {
+            if (truep (sx_set_memberp (m->schedulerflags, sym_deprecated)))
+            {
+                rv -= ia_m_deprecated;
+            }
+        }
+
+        if (ia_m_stable != (int)0)
+        {
+            if (truep (sx_set_memberp (m->schedulerflags, sym_stable)))
+            {
+                rv += ia_m_stable;
+            }
+        }
+
+        if (ia_m_experimental != (int)0)
+        {
+            if (truep (sx_set_memberp (m->schedulerflags, sym_experimental)))
+            {
+                rv += ia_m_experimental;
+            }
+        }
+        
+        if (ia_m_problematic != (int)0)
+        {
+            if (truep (sx_set_memberp (m->schedulerflags, sym_problematic)))
+            {
+                rv -= ia_m_problematic;
+            }
+        }
+    }
+
+    kyu_command (cons (sym_affinity, cons (sx, cons (make_integer (rv),
+                 sx_end_of_list))));
+
+    return rv;
+}
+
+static sexpr affinity_gtp (sexpr a, sexpr b)
+{
+    int aa = get_affinity (a), ab = get_affinity (b);
+
+    if (aa < ab)
+    {
+        return sx_true;
+    }
+    else if (aa == ab)
+    {
+        if (kmodulep (a) && kmodulep (b))
+        {
+            struct kyu_module *ka = (struct kyu_module *)a,
+                              *kb = (struct kyu_module *)b;
+            const char *sa = sx_symbol (ka->name),
+                       *sb = sx_symbol (kb->name);
+
+            while ((*sa != (const char)0) && (*sa == *sb))
+            {
+                sa++;
+                sb++;
+            }
+
+            return (*sa < *sb) ? sx_true : sx_false;
+        }
+    }
+
+    return sx_false;
+}
+
+static void sort_modules_by_affinity ( void )
+{
+    sexpr c = lx_environment_alist (system_data);
+
+    system_data = lx_make_environment (sx_end_of_list);
+
+    while (consp (c))
+    {
+        sexpr a = car (c), sysname = car (a), sys = cdr (a);
+
+        if (ksystemp (sys))
+        {
+            struct kyu_system *s = (struct kyu_system *)sys;
+            sexpr d = s->services, nserv = sx_end_of_list;
+
+            while (consp (d))
+            {
+                sexpr serv = car (d);
+
+                if (kservicep (serv))
+                {
+                    struct kyu_service *se = (struct kyu_service *)serv;
+
+                    nserv = sx_set_add
+                        (nserv,
+                         kyu_make_service
+                           (se->name, se->description,
+                            se->schedulerflags,
+                            sx_set_sort_merge (se->modules,
+                                               affinity_gtp)));
+                }
+
+                d = cdr (d);
+            }
+
+            kyu_command (cons (sym_update, cons (sysname, nserv)));
+
+            system_data =
+                lx_environment_bind
+                    (system_data, sysname,
+                     kyu_make_system (s->name, s->description, s->location,
+                                      s->schedulerflags, s->modules, nserv));
+        }
+
+        c = cdr (c);
+    }
+}
+
 /* the module list is taken as the primary listing, so this function is
  * supposed to update the list of services using the dependency information
  * from the list of modules.
@@ -1129,6 +1299,7 @@ static sexpr reschedule ( void )
 static void update_services ( void )
 {
     define_string (sym_c_s, ", ");
+
     sexpr c = lx_environment_alist (system_data);
     system_data = lx_make_environment (sx_end_of_list);
 
@@ -1225,6 +1396,8 @@ static void update_services ( void )
 
         c = cdr (c);
     }
+
+    sort_modules_by_affinity ();
 }
 
 static void print_scheduler_data ( void )
@@ -1534,6 +1707,66 @@ static void on_event (sexpr sx, void *aux)
                         reevaluate_target_data ();
                     }
                 }
+                else if (truep (equalp (a, sym_scheduler)))
+                {
+                    sx = car(cdr (sx));
+                    if (environmentp (sx))
+                    {
+                        a = lx_environment_lookup (a, sym_affinity);
+
+                        if (!nexp (a))
+                        {
+                            affinities = a;
+                        }
+
+                        a = lx_environment_lookup
+                            (a, sym_implicit_affinity_multipliers);
+
+                        if (!nexp (a))
+                        {
+                            sx = car (a);
+
+                            ia_m_in_mode =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+
+                            a  = cdr (a);
+                            sx = car (a);
+
+                            ia_m_num_of_provides =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+
+                            a  = cdr (a);
+                            sx = car (a);
+
+                            ia_m_num_of_requirements =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+
+                            a  = cdr (a);
+                            sx = car (a);
+
+                            ia_m_deprecated =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+
+                            a  = cdr (a);
+                            sx = car (a);
+
+                            ia_m_stable =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+
+                            a  = cdr (a);
+                            sx = car (a);
+
+                            ia_m_experimental =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+
+                            a  = cdr (a);
+                            sx = car (a);
+
+                            ia_m_problematic =
+                                (integerp (sx) ? sx_integer (sx) : 0);
+                        }
+                    }
+                }
             }
         }
         else if (truep (equalp (a, sym_get_mode)))
@@ -1594,6 +1827,9 @@ static void read_configuration ()
         kyu_command (cons (sym_request,
                            cons (sym_configuration,
                                  cons (sym_modes, sx_end_of_list))));
+        kyu_command (cons (sym_request,
+                           cons (sym_configuration,
+                                 cons (sym_scheduler, sx_end_of_list))));
 }
 
 int cmain ()
