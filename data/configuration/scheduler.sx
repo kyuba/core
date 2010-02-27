@@ -45,8 +45,9 @@
 
 (bind scheduler
   (affinity                     ; module affinities; see above for details
-    (s-example . 5)             ; example affinity: s-example gets +5, unless
-    ((core . s-example) . -10)) ; it's from the core namespace, then it gets -5
+    ("example" . 5)             ; example affinity: "example" gets +5, unless
+    ((core . s-example) . -10)) ; it's s-example from the core namespace, then
+                                ; it gets -5
 
   (implicit-affinity-multipliers
     50 2 1 5 1 -1 2))           ; assume specific mentions are quite important,

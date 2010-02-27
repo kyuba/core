@@ -251,7 +251,7 @@ static void system_service_action (sexpr system, sexpr service, sexpr action)
 /* this just greedily grabs a list of matching modules and services... */
 static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
 {
-    sexpr rv = sx_end_of_list, c, a, ca, sa, sd, sdd,
+    sexpr rv = sx_end_of_list, c, a, ca, sa, sd, sdd, sdda,
           sys = lx_environment_alist (system_data), ures = sx;
 
     while (consp (sys))
@@ -272,9 +272,23 @@ static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
                 {
                     a = car (c);
                     sdd = cdr (a);
+                    sdda = car (sdd);
 
-                    if (symbolp (sdd) && truep (rx_match_sx (car(a), sa)) &&
-                        truep (equalp (sdd, m->name)))
+                    if (consp (sdda))
+                    {
+                        if (!symbolp (cdr (sdda)))
+                        {
+                            continue;
+                        }
+                    }
+                    else if (!symbolp (sdda))
+                    {
+                        continue;
+                    }
+
+
+                    if (truep (rx_match_sx (car (a), sa)) &&
+                        truep (rx_match_sx (cdr (sdd), m->name)))
                     {
                         rv = cons (cons ((sexpr)m, sa), rv);
                         ures = sx_set_remove (ures, a);
@@ -290,8 +304,22 @@ static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
                 {
                     a = car (c);
                     sdd = cdr (a);
+                    sdda = car (sdd);
 
-                    if (consp (sdd) && truep (rx_match_sx (car(a), sa)) &&
+                    if (consp (sdda))
+                    {
+                        if (!stringp (cdr (sdda)))
+                        {
+                            continue;
+                        }
+                    }
+                    else if (!stringp (sdda))
+                    {
+                        continue;
+                    }
+
+
+                    if (truep (rx_match_sx (car (a), sa)) &&
                         truep (rx_match_sx (cdr (sdd), s->name)))
                     {
                         rv = cons (cons ((sexpr)s, sa), rv);
@@ -320,58 +348,9 @@ static sexpr reschedule_get_enable (sexpr sx, sexpr *unresolved)
 /* note to self: unresolved services are meaningless when disabling... */
 static sexpr reschedule_get_disable (sexpr sx)
 {
-    sexpr rv = sx_end_of_list, c, a, ca, sa, sd, sdd,
-          sys = lx_environment_alist (system_data);
+    sexpr dontcare = sx_end_of_list;
 
-    while (consp (sys))
-    {
-        ca = car (sys);
-        sa = car (ca);
-        sd = cdr (ca);
-
-        if (ksystemp (sd))
-        {
-            struct kyu_system *sp = (struct kyu_system *)sd;
-
-            for (sd = sp->modules; consp (sd); sd = cdr (sd))
-            {
-                struct kyu_module *m = (struct kyu_module *)car (sd);
-
-                for (c = sx; consp (c); c = cdr (c))
-                {
-                    a = car (c);
-                    sdd = cdr (a);
-
-                    if (symbolp (sdd) && truep (rx_match_sx (car(a), sa)) &&
-                        truep (rx_match_sx (sdd, m->name)))
-                    {
-                        rv = cons (cons ((sexpr)m, sa), rv);
-                    }
-                }
-            }
-
-            for (sd = sp->services; consp (sd); sd = cdr (sd))
-            {
-                struct kyu_service *s = (struct kyu_service *)car (sd);
-
-                for (c = sx; consp (c); c = cdr (c))
-                {
-                    a = car (c);
-                    sdd = cdr (a);
-
-                    if (consp (sdd) && truep (rx_match_sx (car(a), sa)) &&
-                        truep (rx_match_sx (cdr (sdd), s->name)))
-                    {
-                        rv = cons (cons ((sexpr)s, sa), rv);
-                    }
-                }
-            }
-        }
-
-        sys = cdr (sys);
-    }
-
-    return rv;
+    return reschedule_get_enable (sx, &dontcare);
 }
 
 /* returns #t if the requirments have already been met, (#nonexistent list) if
@@ -627,7 +606,7 @@ static sexpr users (sexpr sx)
 }
 
 /* sort using before/after ordering; "after" takes precedence while sorting */
-static sexpr sort_modules_and_services (sexpr a, sexpr b)
+static sexpr sort_modules_and_services (sexpr a, sexpr b, void *aux)
 {
     sexpr names_a  = sx_end_of_list, names_b  = sx_end_of_list,
           svcn_a   = sx_end_of_list, svcn_b   = sx_end_of_list,
@@ -907,7 +886,7 @@ static sexpr reschedule ( void )
         }
     }
 
-    seen = sx_set_sort_merge (seen, sort_modules_and_services);
+    seen = sx_set_sort_merge (seen, sort_modules_and_services, (void *)0);
 
     /* intersecting sx_enable with the sorted version of seen indirectly sorts
      * to_enable as well, since sx_set_intersect will just go over the second
@@ -928,7 +907,7 @@ static sexpr reschedule ( void )
         {
             aa = car (a);
 
-            if (truep (sort_modules_and_services (ca, aa)) &&
+            if (truep (sort_modules_and_services (ca, aa, (void *)0)) &&
                 falsep (flagp (aa, sym_enabled)) &&
                 falsep (flagp (aa, sym_blocked)))
             {
@@ -955,7 +934,7 @@ static sexpr reschedule ( void )
             {
                 aa = car (a);
 
-                if (truep (sort_modules_and_services (ca, aa)) &&
+                if (truep (sort_modules_and_services (ca, aa, (void *)0)) &&
                     falsep (flagp (aa, sym_enabled)) &&
                     falsep (flagp (aa, sym_blocked)))
                 {
@@ -1031,7 +1010,8 @@ static sexpr reschedule ( void )
     }
 
     /* sorting to disable is in reverse order of enabling */
-    seen = sx_reverse(sx_set_sort_merge (seen, sort_modules_and_services));
+    seen = sx_reverse(sx_set_sort_merge (seen, sort_modules_and_services,
+                                         (void *)0));
     to_disable = sx_reverse (sx_set_intersect (to_disable, seen));
 
     r = to_disable;
@@ -1044,7 +1024,7 @@ static sexpr reschedule ( void )
         {
             aa = car (a);
 
-            if (falsep (sort_modules_and_services (ca, aa)) &&
+            if (falsep (sort_modules_and_services (ca, aa, (void *)0)) &&
                 truep (flagp (aa, sym_enabled)))
             {
                 to_disable = sx_set_remove (to_disable, ca);
@@ -1066,7 +1046,7 @@ static sexpr reschedule ( void )
             {
                 aa = car (a);
 
-                if (falsep (sort_modules_and_services (ca, aa)) &&
+                if (falsep (sort_modules_and_services (ca, aa, (void *)0)) &&
                     truep (flagp (aa, sym_enabled)))
                 {
                     to_disable = sx_set_remove (to_disable, ca);
@@ -1137,21 +1117,112 @@ static sexpr reschedule ( void )
 }
 
 /* calculate affinity for a given module */
-static int get_affinity (sexpr sx)
+static int get_affinity (sexpr sx, sexpr system)
 {
-    int rv = 0, t;
+    int rv = 0, t, i;
     struct kyu_module *m;
-    sexpr c;
+    sexpr c, a, sdd, sdda, d, sdde;
 
     if (kmodulep (sx))
     {
         m = (struct kyu_module *)sx;
 
-#warning get_affinity() still ignores the global affinity spec list
+        for (c = affinities; consp (c); c = cdr (c))
+        {
+            a = car (c);
+
+            if (consp (a))
+            {
+                sdd  = car (a);
+                sdde = cdr (a);
+                i    = sx_integer (sdde);
+
+                if (consp (sdd))
+                {
+                    if (falsep (rx_match_sx (rx_compile_sx (car (sdd)),
+                                system)))
+                    {
+                        continue;
+                    }
+
+                    sdd = cdr (sdd);
+                }
+
+                if (symbolp (sdd))
+                {
+                    if (truep (rx_match_sx (rx_compile_sx (sdd), m->name)))
+                    {
+                        rv += i;
+                    }
+                }
+                else if (stringp (sdd))
+                {
+                    if (truep (sx_set_rx_memberp (m->provides, sdd)))
+                    {
+                        rv += i;
+                    }
+                }
+            }
+        }
 
         if (ia_m_in_mode != (int)0)
         {
-#warning get_affinity() still ignores current mode data for implicit affinities
+            for (i = 0; i < 2; i++)
+            {
+                if (i == 0)
+                {
+                    c = target_mode_enable;
+                }
+                else
+                {
+                    c = target_mode_disable;
+                }
+
+                while (consp (c))
+                {
+                    a = car (c);
+                    sdd = cdr (a);
+                    sdda = car (sdd);
+
+                    if (truep (rx_match_sx (car (a), system)))
+                    {
+                        if (consp (sdda))
+                        {
+                            if (symbolp (cdr (sdda)))
+                            {
+                                goto module_symbol_mode_action;
+                            }
+                            else if (stringp (cdr (sdda)))
+                            {
+                                goto module_string_mode_action;
+                            }
+                        }
+                        else if (symbolp (sdda))
+                        {
+                          module_symbol_mode_action:
+                            if (truep (rx_match_sx (cdr (sdd), m->name)))
+                            {
+                                rv += ia_m_in_mode;
+                            }
+                        }
+                        else if (stringp (sdda))
+                        {
+                          module_string_mode_action:
+                            sdde = cdr (sdd);
+                        
+                            for (d = m->provides; consp (d); d = cdr (d))
+                            {
+                                if (truep (rx_match_sx (sdde, car (d))))
+                                {
+                                    rv += ia_m_in_mode;
+                                }
+                            }
+                        }
+                    }
+
+                    c = cdr (c);
+                }
+            }
         }
 
         if (ia_m_num_of_provides != (int)0)
@@ -1207,15 +1278,13 @@ static int get_affinity (sexpr sx)
         }
     }
 
-    kyu_command (cons (sym_affinity, cons (sx, cons (make_integer (rv),
-                 sx_end_of_list))));
-
     return rv;
 }
 
-static sexpr affinity_gtp (sexpr a, sexpr b)
+static sexpr affinity_gtp (sexpr a, sexpr b, void *aux)
 {
-    int aa = get_affinity (a), ab = get_affinity (b);
+    int aa = get_affinity (a, *((sexpr *)aux)),
+        ab = get_affinity (b, *((sexpr *)aux));
 
     if (aa < ab)
     {
@@ -1272,13 +1341,11 @@ static void sort_modules_by_affinity ( void )
                            (se->name, se->description,
                             se->schedulerflags,
                             sx_set_sort_merge (se->modules,
-                                               affinity_gtp)));
+                                               affinity_gtp, &sysname)));
                 }
 
                 d = cdr (d);
             }
-
-            kyu_command (cons (sym_update, cons (sysname, nserv)));
 
             system_data =
                 lx_environment_bind
@@ -1396,8 +1463,6 @@ static void update_services ( void )
 
         c = cdr (c);
     }
-
-    sort_modules_by_affinity ();
 }
 
 static void print_scheduler_data ( void )
@@ -1466,11 +1531,7 @@ static sexpr compile_list (sexpr l)
     {
         sexpr la = car (l);
 
-        if (symbolp (la))
-        {
-            r = cons (cons (rx_compile_sx (sym_any_rx), la), r);
-        }
-        else if (stringp (la))
+        if (symbolp(la) || stringp (la))
         {
             r = cons (cons (rx_compile_sx (sym_any_rx),
                             cons (la, rx_compile_sx (la))),
@@ -1525,6 +1586,8 @@ static void reevaluate_target_data ( void )
         target_mode_ipc     = sx_end_of_list;
         target_mode_enable  = compile_list (target_extra_enable);
         target_mode_disable = compile_list (target_extra_disable);
+ 
+        sort_modules_by_affinity ();
 
         if (falsep (reschedule()))
         {
@@ -1539,6 +1602,8 @@ static void reevaluate_target_data ( void )
             kyu_command (t);
             return;
         }
+
+        sort_modules_by_affinity ();
 
         if (falsep (reschedule ()))
         {
@@ -1710,9 +1775,10 @@ static void on_event (sexpr sx, void *aux)
                 else if (truep (equalp (a, sym_scheduler)))
                 {
                     sx = car(cdr (sx));
+                    
                     if (environmentp (sx))
                     {
-                        a = lx_environment_lookup (a, sym_affinity);
+                        a = lx_environment_lookup (sx, sym_affinity);
 
                         if (!nexp (a))
                         {
@@ -1720,7 +1786,7 @@ static void on_event (sexpr sx, void *aux)
                         }
 
                         a = lx_environment_lookup
-                            (a, sym_implicit_affinity_multipliers);
+                            (sx, sym_implicit_affinity_multipliers);
 
                         if (!nexp (a))
                         {
