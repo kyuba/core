@@ -192,6 +192,7 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
     struct termination_meta *cur = termination_meta;
     struct termination_meta **p  = &termination_meta;
     int respawn = ~0;
+    sexpr continuations = sx_end_of_list;
 
     free_exec_context (ctx);
 
@@ -219,21 +220,37 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
     {
         if (falsep (sx_set_rx_memberp (running_processes, cur->regex)))
         {
-            struct machine_state *stu
-                = (struct machine_state *)(cur->continuation);
+            if (!mstatep (cur->continuation))
+            {
+#warning fix the source of this state corruption and then remove this warning
+                kyu_command (make_string("state curruption, expected continuation, but have"));
+                kyu_command (cur->continuation);
+            }
+            else
+            {
+                continuations = cons (cur->continuation, continuations);
+            }
 
             *p  = cur->next;
             cur = *p;
-
-            lx_continue
-                (lx_make_state (cons (sx_true, sx_end_of_list),
-                 stu->environment, stu->code, stu->dump));
 
             continue;
         }
 
         p   = &(cur->next);
         cur = cur->next;
+    }
+
+    while (consp (continuations))
+    {
+        struct machine_state *stu
+            = (struct machine_state *)(car (continuations));
+
+        lx_continue
+            (lx_make_state (cons (sx_true, sx_end_of_list),
+             stu->environment, stu->code, stu->dump));
+
+        continuations = cdr (continuations);
     }
 
     if (respawn)
