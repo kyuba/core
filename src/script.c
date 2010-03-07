@@ -79,23 +79,21 @@ static void script_command_callback (sexpr sx, void *aux)
                 {
                     if (truep (equalp (cur->id, a)))
                     {
-                        struct machine_state *stu =
-                                (struct machine_state *)cur->continuation;
-
                         *p = cur->next;
 
                         if (nexp (cur->key))
                         {
-                            lx_continue
-                                    (lx_make_state (cons (sx, sx_end_of_list),
-                                     stu->environment, stu->code, stu->dump));
+                            lx_continue_explicit
+                                (cons (sx, sx_end_of_list), sx_end_of_list,
+                                 sx_end_of_list, cur->continuation);
                         }
                         else
                         {
-                            lx_continue
-                                    (lx_make_state (cons (lx_environment_lookup
-                                     (sx, cur->key), sx_end_of_list),
-                                     stu->environment, stu->code, stu->dump));
+                            lx_continue_explicit
+                                (cons (lx_environment_lookup (sx, cur->key),
+                                       sx_end_of_list),
+                                 sx_end_of_list, sx_end_of_list,
+                                 cur->continuation);
                         }
 
                         free_pool_mem (cur);
@@ -173,17 +171,13 @@ sexpr kyu_sx_default_environment ( void )
 
 static void on_death (struct exec_context *ctx, void *u)
 {
-    struct machine_state *stu = (struct machine_state *)u;
-    sexpr nstate;
     sexpr rv = (ctx->exitstatus == 0) ? sx_true
                                       : make_integer (ctx->exitstatus);
 
-    nstate = lx_make_state (cons (rv, sx_end_of_list), stu->environment,
-                            stu->code, stu->dump);
-
     free_exec_context (ctx);
 
-    lx_continue (nstate);
+    lx_continue_explicit
+        (cons (rv, sx_end_of_list), sx_end_of_list, sx_end_of_list, (sexpr)u);
 }
 
 static void on_death_respawn (struct exec_context *ctx, void *u)
@@ -220,16 +214,7 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
     {
         if (falsep (sx_set_rx_memberp (running_processes, cur->regex)))
         {
-            if (!mstatep (cur->continuation))
-            {
-#warning fix the source of this state corruption and then remove this warning
-                kyu_command (make_string("state curruption, expected continuation, but have"));
-                kyu_command (cur->continuation);
-            }
-            else
-            {
-                continuations = cons (cur->continuation, continuations);
-            }
+            continuations = cons (cur->continuation, continuations);
 
             *p  = cur->next;
             cur = *p;
@@ -243,12 +228,9 @@ static void on_death_respawn (struct exec_context *ctx, void *u)
 
     while (consp (continuations))
     {
-        struct machine_state *stu
-            = (struct machine_state *)(car (continuations));
-
-        lx_continue
-            (lx_make_state (cons (sx_true, sx_end_of_list),
-             stu->environment, stu->code, stu->dump));
+        lx_continue_explicit
+            (cons (sx_true, sx_end_of_list), sx_end_of_list, sx_end_of_list,
+             car(continuations));
 
         continuations = cdr (continuations);
     }
@@ -375,8 +357,7 @@ sexpr kyu_sc_run (sexpr arguments, struct machine_state *state)
 
         if (c != (struct exec_context *)0)
         {
-            sexpr continuation = lx_make_state
-                    (sx_end_of_list,sx_end_of_list,sx_end_of_list, state->dump);
+            sexpr continuation = state->dump;
             multiplex_add_process (c, on_death, (void *)continuation);
 
             state->environment = sx_end_of_list;
@@ -436,8 +417,7 @@ sexpr kyu_sc_get_configuration (sexpr arguments, struct machine_state *state)
 
         a->id           = car (arguments);
         a->key          = car (cdr (arguments));
-        a->continuation = lx_make_state
-                (sx_end_of_list, sx_end_of_list, sx_end_of_list, state->dump);
+        a->continuation = state->dump;
         a->next         = open_cfg_requests;
 
         open_cfg_requests = a;
@@ -530,8 +510,7 @@ sexpr kyu_sc_kill_subprocesses (sexpr arguments, struct machine_state *state)
         m = (struct termination_meta *)get_pool_mem (&pool);
 
         m->regex           = rx;
-        m->continuation    = lx_make_state
-                (sx_end_of_list, sx_end_of_list, sx_end_of_list, state->dump);
+        m->continuation    = state->dump;
         m->next            = termination_meta;
 
         termination_meta   = m;

@@ -82,9 +82,21 @@ void kyu_sd_remove_listener (struct sexpr_io *io)
 
 void kyu_sd_add_listener (struct sexpr_io *io)
 {
-    struct memory_pool pool =
+    static struct memory_pool pool =
             MEMORY_POOL_INITIALISER (sizeof (struct socket_list));
-    struct socket_list *nl = get_pool_mem (&pool);
+    struct socket_list *nl = sl;
+
+    while (nl)
+    {
+        if (nl->io == io)
+        {
+            return;
+        }
+
+        nl = nl->next;
+    }
+
+    nl = get_pool_mem (&pool);
 
     nl->io   = io;
     nl->next = sl;
