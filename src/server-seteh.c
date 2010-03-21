@@ -31,21 +31,26 @@
 #include <curie/memory.h>
 #include <curie/directory.h>
 #include <curie/graph.h>
+#include <curie/filesystem.h>
 #include <sievert/sexpr.h>
+#include <sievert/shell.h>
 #include <kyuba/ipc.h>
 #include <kyuba/types.h>
+#include <kyuba/system.h>
 
 define_symbol (sym_initialise,           "initialise");
 define_symbol (sym_server_seteh,         "server-seteh");
 define_symbol (sym_server,               "server");
 define_symbol (sym_binary_not_found,     "binary-not-found");
 define_symbol (sym_schedule_limitations, "schedule-limitations");
-define_symbol (sym_binary_name,          "binary-name");
+define_symbol (sym_binary,               "binary");
 define_symbol (sym_once_per_network,     "once-per-network");
 define_symbol (sym_once_per_system,      "once-per-system");
 define_symbol (sym_io_type,              "io-type");
 define_symbol (sym_kyuba_ipc,            "kyuba-ipc");
 define_symbol (sym_none,                 "none");
+define_symbol (sym_pid_file,             "pid-file");
+define_symbol (sym_parameters,           "parameters");
 
 define_symbol (sym_init_script,          "init-script");
 define_symbol (sym_daemon,               "daemon");
@@ -77,14 +82,15 @@ define_symbol (sym_warning,              "warning");
 define_symbol (sym_module_has_no_functions,     "module-has-no-functions");
 define_symbol (sym_module_action_not_available, "module-action-not-available");
 
-static sexpr global_environment, my_modules, mod_functions;
+static sexpr global_environment, my_modules, mod_functions, mod_metadata;
+static void update_status_from_pid_files ( void );
 static int open_config_files = 0;
 
 static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
 {
     if (consp (sx))
     {
-        sexpr a = car (sx), mt;
+        sexpr a = car (sx), mt, b, c;
         struct kyu_module *mo;
         char daemon = 0;
 
@@ -101,6 +107,11 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
                   schedulerflags = sx_end_of_list,
                   functions      = sx_end_of_list,
                   functiondata   = sx_end_of_list,
+                  binary         = sx_end_of_list,
+                  pidfile        = sx_end_of_list,
+                  startcommand   = sx_end_of_list,
+                  stopcommand    = sx_end_of_list,
+                  parameters     = sx_end_of_list,
                   module;
 
             if (daemon)
@@ -145,8 +156,54 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
                 {
                     functiondata = sx_set_merge (functiondata, cdr (v));
                 }
+                else if (truep (equalp (sym_pid_file, va)))
+                {
+                    pidfile = sx_set_merge (pidfile, cdr (v));
+                }
+                else if (truep (equalp (sym_binary, va)))
+                {
+                    binary = sx_set_merge (binary, cdr (v));
+                }
+                else if (truep (equalp (sym_parameters, va)))
+                {
+                    parameters = sx_set_merge (parameters, cdr (c));
+                }
 
                 a = cdr (a);
+            }
+
+            if (!eolp (binary))
+            {
+                for (a = binary; consp (a); a = cdr (a))
+                {
+                    b = car (a);
+
+                    if (falsep ((c = which (b))))
+                    {
+                        kyu_command (cons (sym_warning,
+                                       cons (sym_binary_not_found,
+                                         cons (native_system,
+                                           cons (name,
+                                             cons (b,
+                                                   sx_end_of_list))))));
+
+                        return;
+                    }
+
+                    if (daemon)
+                    {
+                        startcommand =
+                            cons (cons (sym_run, cons (c, parameters)),
+                                  startcommand);
+                    }
+                }
+            }
+
+            if (daemon)
+            {
+                functiondata = cons (cons (sym_start, startcommand),
+                                     cons (cons (sym_stop, stopcommand),
+                                           functiondata));
             }
 
             mt = lx_environment_lookup (my_modules, name);
@@ -170,6 +227,12 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
             mod_functions =
                 lx_environment_bind   (mod_functions, name, functiondata);
 
+            mod_metadata =
+                lx_environment_unbind (mod_metadata,  name);
+            mod_metadata =
+                lx_environment_bind   (mod_metadata,  name, cons (binary,
+                                                                  pidfile));
+
             kyu_command (cons (sym_update, cons (native_system,
                          cons (module, sx_end_of_list))));
         }
@@ -179,6 +242,8 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
         open_config_files--;
         if (open_config_files == 0)
         {
+            update_status_from_pid_files ();
+
             kyu_command (cons (sym_initialised,
                          cons (sym_server_seteh, sx_end_of_list)));
         }
@@ -486,6 +551,10 @@ static void on_event (sexpr sx, void *aux)
                 }
             }
         }
+        else if (truep (equalp (a, sym_process_terminated)))
+        {
+            update_status_from_pid_files ();
+        }
     }
 }
 
@@ -494,6 +563,81 @@ static void read_configuration ()
     kyu_command (cons (sym_request,
                        cons (sym_configuration,
                              cons (sym_server_seteh, sx_end_of_list))));
+}
+
+static void update_status_from_pid_files ( void )
+{
+    sexpr c, a, n, pl, name, m, flags;
+    struct sexpr_io *io;
+    struct kyu_module *mod;
+    int online;
+
+    for (c = lx_environment_alist (mod_metadata); consp (c); c = cdr (c))
+    {
+        a = car (c);
+        name = car (a);
+        a = cdr (a);
+
+        online = 0;
+
+        if (consp ((pl = cdr (a))))
+        {
+            while (!online && (consp (pl)))
+            {
+                a = car (pl);
+
+                if (truep (filep (a)))
+                {
+                    io = sx_open_i (io_open_read (sx_string (a)));
+
+                    while (!eofp ((n = sx_read (io))))
+                    {
+                        if (integerp (n))
+                        {
+                            online = kyu_test_pid (sx_integer (n));
+                            break;
+                        }
+                    }
+
+                    sx_close_io (io);
+                }
+
+                pl = cdr (pl);
+            }
+
+            if (!nexp (m = lx_environment_lookup (my_modules, name)))
+            {
+                mod = (struct kyu_module *)m;
+
+                flags = mod->schedulerflags;
+
+                if (truep (sx_set_memberp (flags, sym_enabled))
+                    != online)
+                {
+                    my_modules = lx_environment_unbind (my_modules, name);
+
+                    if (online)
+                    {
+                        flags = sx_set_add (flags, sym_enabled);
+                    }
+                    else
+                    {
+                        flags = sx_set_remove (flags, sym_enabled);
+                    }
+
+                    m = kyu_make_module
+                        (mod->name, mod->description, mod->provides,
+                         mod->requires, mod->before, mod->after,
+                         mod->conflicts, flags, mod->functions);
+
+                    my_modules = lx_environment_bind (my_modules, name, m);
+
+                    kyu_command (cons (sym_update, cons (native_system,
+                                 cons (m, sx_end_of_list))));
+                }
+            }
+        }
+    }
 }
 
 int cmain ()
@@ -515,6 +659,7 @@ int cmain ()
                                             action_dispatch));
     my_modules    = lx_make_environment (sx_end_of_list);
     mod_functions = lx_make_environment (sx_end_of_list);
+    mod_metadata  = lx_make_environment (sx_end_of_list);
 
     read_configuration ();
 

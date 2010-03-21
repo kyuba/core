@@ -6,10 +6,10 @@
 
   (libraries "sievert")
 
-  (code "script" "ipc" "sx-distributor" "types")
+  (code "script" "ipc" "sx-distributor" "types" "system")
 
   (headers
-        "script" "ipc" "sx-distributor" "types")
+        "script" "ipc" "sx-distributor" "types" "system")
   (documentation
         "description"))
 

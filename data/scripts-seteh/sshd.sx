@@ -1,0 +1,10 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script d-sshd "SSH daemon"
+  (provides "ssh")
+  (after "fs-(sys|proc|dev)")
+  (schedule-limitations once-per-host)
+  (binary "sshd")
+  (pid-file "/var/run/sshd.pid"))

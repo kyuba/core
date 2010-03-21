@@ -2,7 +2,7 @@
 ; vim:ft=lisp
 ;;
 
-(server seteh "Seteh Scripting Server"
+(server server-seteh "Seteh Scripting Server"
   active
   (schedule-limitations once-per-system)
   (binary-name . "kyu-server-seteh")

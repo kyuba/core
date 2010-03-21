@@ -53,11 +53,6 @@ static sexpr global_environment;
 static sexpr binaries;
 static int open_config_files = 0;
 
-static void termination_cleanup ()
-{
-#warning job server still needs to kill clients on termination request
-}
-
 static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
 {
     if (consp (sx))
@@ -122,15 +117,11 @@ static void on_job_file_read (sexpr sx, struct sexpr_io *io, void *p)
 
             if (truep (active) && stringp (binary_name))
             {
-                sexpr args;
+                sexpr args = cons (id, cons (binary_name, sx_end_of_list));
 
-                if (truep (kyuba_ipc))
+                if (!truep (kyuba_ipc))
                 {
-                    args = cons (binary_name, sx_end_of_list);
-                }
-                else
-                {
-                    args = cons (sx_false, cons (binary_name, sx_end_of_list));
+                    args = cons (sx_false, args);
                 }
 
                 if (falsep (kyu_sc_keep_alive
@@ -226,7 +217,6 @@ static void read_configuration ()
 int cmain ()
 {
     programme_identification = cons (sym_server_job, make_integer (1));
-    cleanup_on_termination_request = termination_cleanup;
 
     initialise_kyu_script_commands ();
     initialise_kyu_types ();
