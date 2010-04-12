@@ -1,6 +1,11 @@
+;;
+; vim:ft=lisp
+;;
+
 (library "kyuba" libcurie
   (name "Kyuba Shared Code")
-  (description "This library containts kyuba-specific code shared by the components")
+  (description
+        "This library containts kyuba-specific code shared by the components")
   (version "2")
   (url "http://kyuba.org/")
 
@@ -135,3 +140,17 @@
   (libraries "curie" "seteh" "kyuba")
 
   (code "bootchart"))
+
+;
+; -- even more dependant programmes
+;
+
+(programme "kyu-feedback-curses" libc
+  (name "kyu-feedback-curses")
+  (description "Kyuba Curses Visualiser")
+  (version "1")
+
+  (libraries "curie" "seteh" "kyuba" "curses")
+
+  (code "feedback-curses"))
+
