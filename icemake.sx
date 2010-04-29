@@ -137,7 +137,7 @@
   (description "Kyuba Bootchart Programme")
   (version "1")
 
-  (libraries "curie" "seteh" "kyuba")
+  (libraries "curie" "seteh" "kyuba" "sievert")
 
   (code "bootchart"))
 
@@ -150,7 +150,7 @@
   (description "Kyuba Curses Visualiser")
   (version "1")
 
-  (libraries "curie" "seteh" "kyuba" "curses")
+  (libraries "curie" "seteh" "kyuba" "sievert" "curses")
 
   (code "feedback-curses"))
 
