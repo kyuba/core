@@ -49,7 +49,7 @@
   (description "Kyuba IPC hub")
   (version "2")
 
-  (libraries "kyuba" "syscall")
+  (libraries "kyuba" "seteh" "sievert" "syscall")
 
   (code "ipc-hub")
 
@@ -61,7 +61,7 @@
   (description "Kyuba IPC client")
   (version "2")
 
-  (libraries "kyuba")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "ipc-client")
 
