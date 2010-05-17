@@ -1,0 +1,16 @@
+;;
+; vim:ft=lisp
+;;
+
+(daemon d-git-daemon "GIT Server Daemon"
+  (provides "git-daemon")
+  (after "fs-.*")
+  (schedule-limitations once-per-network)
+  (binary "git")
+  (pid-file "/var/run/git-daemon.pid")
+  (parameters 
+    "daemon" 
+    "--user" git-user 
+    "--group" git-group
+    "--pid-file" "/var/run/git-daemon.pid")
+  (io-type log))

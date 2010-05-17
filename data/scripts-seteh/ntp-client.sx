@@ -1,0 +1,11 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script s-ntp-client "NTP Client Support"
+  (provides "ntp-client")
+  (after "fs-(sys|proc|dev)")
+  (schedule-limitations once-per-host)
+  (functions
+    (start
+      (run #f "ntpdate" "-s" "-u" "-b" ntp-client-pool-server))))

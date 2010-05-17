@@ -1,0 +1,11 @@
+;;
+; vim:ft=lisp
+;;
+
+(daemon d-rsyncd "RSYNC Server Daemon"
+  (provides "rsyncd")
+  (after "fs-.*")
+  (schedule-limitations once-per-network)
+  (binary "rsync")
+  (pid-file "/var/run/rsyncd.pid")
+  (io-type log))

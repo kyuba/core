@@ -1,0 +1,12 @@
+;;
+; vim:ft=lisp
+;;
+
+(daemon d-dhcpcd "DHCP Client Daemon"
+  (provides "dhcp-client" "dhcpcd")
+  (after "fs-.*")
+  (conflicts-with d-dhclient)
+  (schedule-limitations once-per-network)
+  (binary "dhcpcd")
+  (pid-file "/var/run/dhcpcd.pid")
+  (io-type log))

@@ -1,0 +1,16 @@
+;;
+; vim:ft=lisp
+;;
+
+(daemon d-privoxy "Privoxy SOCKS Proxy Daemon"
+  (provides "privoxy")
+  (after "fs-.*")
+  (schedule-limitations once-per-network)
+  (binary "privoxy")
+  (pid-file "/var/run/privoxy.pid")
+  (parameters 
+    "daemon" 
+    "--user" privoxy-user
+    "--config" privoxy-config
+    "--pidfile" "/var/run/privoxy.pid")
+  (io-type log))
