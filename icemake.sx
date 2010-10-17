@@ -61,7 +61,7 @@
   (description "Kyuba IPC client")
   (version "2")
 
-  (libraries "kyuba" "seteh" "sievert")
+  (libraries "kyuba" "seteh" "sievert" "syscall")
 
   (code "ipc-client")
 
@@ -73,7 +73,7 @@
   (description "Kyuba Job Server")
   (version "1")
 
-  (libraries "kyuba" "seteh" "sievert")
+  (libraries "kyuba" "seteh" "sievert" "syscall")
 
   (code "server-job"))
 
@@ -82,7 +82,7 @@
   (description "Kyuba Scheduler")
   (version "1")
 
-  (libraries "kyuba" "seteh" "sievert")
+  (libraries "kyuba" "seteh" "sievert" "syscall")
 
   (code "scheduler"))
 
@@ -91,7 +91,7 @@
   (description "Kyuba Seteh Scripting Server")
   (version "1")
 
-  (libraries "seteh" "kyuba" "sievert")
+  (libraries "seteh" "kyuba" "sievert" "syscall")
 
   (code "server-seteh"))
 
@@ -100,7 +100,7 @@
   (description "Kyuba Configuration Server")
   (version "1")
 
-  (libraries "seteh" "kyuba" "sievert")
+  (libraries "seteh" "kyuba" "sievert" "syscall")
 
   (code "configuration"))
 
@@ -137,7 +137,7 @@
   (description "Kyuba Bootchart Programme")
   (version "1")
 
-  (libraries "curie" "seteh" "kyuba" "sievert")
+  (libraries "curie" "seteh" "kyuba" "sievert" "syscall")
 
   (code "bootchart"))
 
@@ -150,7 +150,7 @@
   (description "Kyuba Curses Visualiser")
   (version "1")
 
-  (libraries "curie" "seteh" "kyuba" "sievert" "curses")
+  (libraries "curie" "seteh" "kyuba" "sievert" "curses" "syscall")
 
   (code "feedback-curses"))
 
