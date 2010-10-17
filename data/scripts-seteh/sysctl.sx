@@ -1,0 +1,11 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script s-sysctl "Sysctl Support"
+  (provides "sysctl")
+  (after "fs-(sys|proc|dev)")
+  (schedule-limitations once-per-host)
+  (functions
+    (start
+      (run #f "sysctl" "-p" sysctl-config-file))))

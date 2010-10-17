@@ -1,0 +1,15 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script s-swap-bsd "Activates BSD-only swap devices"
+  (provides "swap")
+  (after "fs-(sys|proc|dev)")
+  (schedule-limitations once-per-host)
+  (functions 
+    (start
+      (run #f "swapctl" "-A" "-t" "noblk"))
+    (stop
+      (run #f "umount" "-a" "-t" "tmpfs")
+      (run #f "swapctl" "-U" "-t" "noblk"))))
+

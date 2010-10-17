@@ -1,0 +1,14 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script s-alsactl "ALSA Configuration Support"
+  (provides "alsactl")
+  (after "fs-(sys|proc|dev)")
+  (schedule-limitations once-per-host)
+  (functions
+    (start
+      (run "alsactl" "restore"))
+    (stop 
+      (run "alsactl" "store"))))
+

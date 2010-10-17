@@ -1,0 +1,11 @@
+;;
+; vim:ft=lisp
+;;
+
+(init-script s-dmesg "Dmesg Log Level Support"
+  (provides "dmesg")
+  (after "fs-(sys|proc|dev)")
+  (schedule-limitations once-per-host)
+  (functions
+    (start
+      (run #f "dmesg" "-n" dmesg-log-level))))

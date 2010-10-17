@@ -1,0 +1,12 @@
+;;
+; vim:ft=lisp
+;;
+
+(daemon d-ntpd "NTP Server Daemon"
+  (provides "ntp-server" "ntpd")
+  (after "fs-.*")
+  (schedule-limitations once-per-network)
+  (binary "ntpd")
+  (pid-file "/var/run/ntpd.pid")
+  (parameters "-p" "/var/run/ntpd.pid")
+  (io-type log))
