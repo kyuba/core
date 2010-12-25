@@ -560,9 +560,7 @@ static void on_event (sexpr sx, void *aux)
 
 static void read_configuration ()
 {
-    kyu_command (cons (sym_request,
-                       cons (sym_configuration,
-                             cons (sym_server_seteh, sx_end_of_list))));
+    kyu_command (sx_list3 (sym_request, sym_configuration, sym_server_seteh));
 }
 
 static void update_status_from_pid_files ( void )

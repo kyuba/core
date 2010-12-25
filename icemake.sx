@@ -128,6 +128,15 @@
   (documentation
         "last-rites"))
 
+(programme "kyu-feedback" libcurie
+  (name "kyu-feedback")
+  (description "Kyuba Visualiser")
+  (version "1")
+
+  (libraries "curie" "seteh" "kyuba" "sievert" "syscall")
+
+  (code "feedback"))
+
 ;
 ; -- libc programmes --
 ;
@@ -140,17 +149,3 @@
   (libraries "curie" "seteh" "kyuba" "sievert" "syscall")
 
   (code "bootchart"))
-
-;
-; -- even more dependant programmes
-;
-
-(programme "kyu-feedback-curses" libc
-  (name "kyu-feedback-curses")
-  (description "Kyuba Curses Visualiser")
-  (version "1")
-
-  (libraries "curie" "seteh" "kyuba" "sievert" "curses" "syscall")
-
-  (code "feedback-curses"))
-

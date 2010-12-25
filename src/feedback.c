@@ -27,12 +27,62 @@
 */
 
 #include <curie/main.h>
+#include <curie/stack.h>
+#include <curie/memory.h>
+#include <curie/sexpr.h>
+#include <curie/multiplex.h>
+#include <curie/signal.h>
+#include <syscall/syscall.h>
+#include <kyuba/ipc.h>
 
-char **curie_environment;
+#if defined(have_sys_ioctl)
+#include <sys/ioctl.h>
+#endif
 
-int main(int argc, char **argv)
+static int width  = 80;
+static int height = 25;
+
+struct sexpr_io *stdio;
+
+static void on_event (sexpr event, void *aux)
 {
-    curie_environment = argv;
+    sx_write (stdio, event);
+}
+
+static void initialise_window ()
+{
+#if defined(have_sys_ioctl) && defined(TIOCGWINSZ)
+    struct winsize size;
+
+    if (sys_ioctl (0, TIOCGWINSZ, (long)&size) == 0)
+    {
+        width  = size.ws_col;
+        height = size.ws_row;
+    }
+#endif
+}
+
+static enum signal_callback_result resize_handler
+    (enum signal signal, void *aux)
+{
+    initialise_window ();
+
+    return scr_keep;
+}
+
+int cmain ()
+{
+    stdio = sx_open_stdio();
+
+    multiplex_signal ();
+    multiplex_kyu ();
+
+    multiplex_add_kyu_default (on_event, (void *)0);
+
+    multiplex_add_signal
+        (sig_winch, resize_handler, (void *)0);
+
+    while (multiplex() == mx_ok);
 
     return 0;
 }
