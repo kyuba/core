@@ -110,7 +110,7 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
                   binary         = sx_end_of_list,
                   pidfile        = sx_end_of_list,
                   startcommand   = sx_end_of_list,
-                  stopcommand    = sx_end_of_list,
+                  stopcommand    = sx_true,
                   parameters     = sx_end_of_list,
                   module;
 
@@ -195,6 +195,12 @@ static void on_script_file_read (sexpr sx, struct sexpr_io *io, void *p)
                         startcommand =
                             cons (cons (sym_run, cons (c, parameters)),
                                   startcommand);
+
+                        if (!eolp(pidfile) && truep(stopcommand))
+                        {
+                            stopcommand = sx_list1
+                                (sx_list2(sym_kill_via_pid_file, pidfile));
+                        }
                     }
                 }
             }

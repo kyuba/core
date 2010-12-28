@@ -150,7 +150,8 @@ sexpr kyu_sx_default_environment ( void )
                 (cons (cons (sym_run,
                              lx_foreign_mu (sym_run, kyu_sc_run)),
                  cons (cons (sym_keep_alive,
-                             lx_foreign_mu (sym_keep_alive, kyu_sc_keep_alive)),
+                             lx_foreign_mu (sym_keep_alive,
+                                            kyu_sc_keep_alive)),
                  cons (cons (sym_get_configuration,
                              lx_foreign_mu (sym_get_configuration,
                                             kyu_sc_get_configuration)),
@@ -163,7 +164,12 @@ sexpr kyu_sx_default_environment ( void )
                                             kyu_sc_kill_subprocesses)),
                  cons (cons (sym_out,
                              lx_foreign_mu (sym_out, kyu_sc_out)),
-                       sx_end_of_list))))))));
+                 cons (cons (sym_kill_via_pid_file,
+                             lx_foreign_mu (sym_kill_via_pid_file,
+                                            kyu_sc_kill_via_pid_file)),
+                 cons (cons (sym_kill_pid,
+                             lx_foreign_mu (sym_kill_pid, kyu_sc_kill_pid)),
+                       sx_end_of_list))))))))));
     }
 
     return env;
@@ -551,6 +557,64 @@ sexpr kyu_sc_out (sexpr arguments, struct machine_state *state)
         {
             kyu_command (cons (sym_event, cons (sym_out, arguments)));
         }
+
+        return sx_nil;
+    }
+}
+
+sexpr kyu_sc_kill_via_pid_file (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_kill_via_pid_file,
+                                    kyu_sc_kill_via_pid_file), state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+#warning kyu_sc_kill_via_pid_file() is a stub
+/*        sexpr src = lx_environment_lookup (state->environment, sym_source);
+
+        if (nexp (src))
+        {
+            kyu_command (cons (sym_event,
+                               cons (sym_out, cons (src, arguments))));
+        }
+        else
+        {
+            kyu_command (cons (sym_event, cons (sym_out, arguments)));
+        }*/
+
+        return sx_nil;
+    }
+}
+
+sexpr kyu_sc_kill_pid (sexpr arguments, struct machine_state *state)
+{
+    if (eolp (state->stack))
+    {
+        state->stack =
+                cons(lx_foreign_mu (sym_kill_pid,
+                                    kyu_sc_kill_pid), state->stack);
+
+        return sx_nonexistent;
+    }
+    else
+    {
+#warning kyu_sc_kill_pid() is a stub
+/*        sexpr src = lx_environment_lookup (state->environment, sym_source);
+
+        if (nexp (src))
+        {
+            kyu_command (cons (sym_event,
+                               cons (sym_out, cons (src, arguments))));
+        }
+        else
+        {
+            kyu_command (cons (sym_event, cons (sym_out, arguments)));
+        }*/
 
         return sx_nil;
     }

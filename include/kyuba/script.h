@@ -64,6 +64,8 @@ define_symbol (sym_kill_subprocesses,  "kill-subprocesses");
 define_symbol (sym_out,                "out");
 define_symbol (sym_source,             "source");
 define_symbol (sym_terminate,          "terminate");
+define_symbol (sym_kill_via_pid_file,  "kill-via-pid-file");
+define_symbol (sym_kill_pid,           "kill-pid");
 
 void initialise_kyu_script_commands ( void );
 
@@ -75,6 +77,8 @@ sexpr kyu_sc_message (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_exit (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_kill_subprocesses (sexpr arguments, struct machine_state *state);
 sexpr kyu_sc_out (sexpr arguments, struct machine_state *state);
+sexpr kyu_sc_kill_via_pid_file (sexpr arguments, struct machine_state *state);
+sexpr kyu_sc_kill_pid (sexpr arguments, struct machine_state *state);
 
 #ifdef __cplusplus
 }
