@@ -26,6 +26,8 @@
  * THE SOFTWARE.
 */
 
+#include <syscall/syscall.h>
+
 #include <curie/main.h>
 #include <curie/memory.h>
 #include <curie/multiplex.h>
@@ -90,7 +92,7 @@ static void on_ipc_read (sexpr sx)
 
                     kyu_disconnect ();
 
-                    cexit (0);
+                    sys_exit (0);
                 }
             }
         }

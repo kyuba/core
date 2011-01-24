@@ -26,6 +26,8 @@
  * THE SOFTWARE.
 */
 
+#include <syscall/syscall.h>
+
 #include <curie/main.h>
 #include <curie/memory.h>
 #include <curie/sexpr.h>
@@ -56,7 +58,7 @@ static void on_event (sexpr event, void *aux)
 
         if (truep(equalp(c, sym_disconnect)))
         {
-            cexit (24);
+            sys_exit (24);
         }
         else if (truep(equalp(c, sym_event)))
         {
@@ -64,11 +66,11 @@ static void on_event (sexpr event, void *aux)
 
             if (truep(equalp(c, sym_power_down)))
             {
-                cexit (0);
+                sys_exit (0);
             }
             else if (truep(equalp(c, sym_power_reset)))
             {
-                cexit (0);
+                sys_exit (0);
             }
         }
     }
@@ -101,7 +103,7 @@ int cmain()
                         cmd = (char)3;
                         break;
                     default:
-                        cexit (print_help ());
+                        sys_exit (print_help ());
                         break;
                 }
             }
@@ -113,7 +115,7 @@ int cmain()
     switch (cmd)
     {
         case 0:
-            cexit (print_help ());
+            sys_exit (print_help ());
         case 1:
             kyu_command (cons (sym_power_down, sx_end_of_list));
             break;

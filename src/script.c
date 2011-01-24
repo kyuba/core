@@ -26,6 +26,8 @@
  * THE SOFTWARE.
 */
 
+#include <syscall/syscall.h>
+
 #include <curie/main.h>
 #include <curie/multiplex.h>
 #include <curie/memory.h>
@@ -342,7 +344,7 @@ static struct exec_context *sc_run_x (sexpr sx)
         }
         else
         {
-            cexit(25);
+            sys_exit(25);
         }
     }
 
@@ -476,15 +478,15 @@ sexpr kyu_sc_exit (sexpr arguments, struct machine_state *state)
 
         if (truep (ev))
         {
-            cexit (0);
+            sys_exit (0);
         }
         else if (falsep (ev))
         {
-            cexit (1);
+            sys_exit (1);
         }
         else
         {
-            cexit (sx_integer (ev));
+            sys_exit (sx_integer (ev));
         }
 
         return ev; /* not reached... */
