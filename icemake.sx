@@ -23,7 +23,7 @@
   (description "Kyuba generic monitor programme")
   (version "2")
 
-  (libraries "kyuba" "syscall" "seteh" "sievert")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "monitor")
 
@@ -37,7 +37,7 @@
   (description "Kyuba minimal init programme")
   (version "2")
 
-  (libraries "syscall" "sievert")
+  (libraries "sievert")
 
   (code "init" "init-system")
 
@@ -49,7 +49,7 @@
   (description "Kyuba IPC hub")
   (version "2")
 
-  (libraries "kyuba" "seteh" "sievert" "syscall")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "ipc-hub")
 
@@ -61,7 +61,7 @@
   (description "Kyuba IPC client")
   (version "2")
 
-  (libraries "kyuba" "seteh" "sievert" "syscall")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "ipc-client")
 
@@ -73,7 +73,7 @@
   (description "Kyuba Job Server")
   (version "1")
 
-  (libraries "kyuba" "seteh" "sievert" "syscall")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "server-job"))
 
@@ -82,7 +82,7 @@
   (description "Kyuba Scheduler")
   (version "1")
 
-  (libraries "kyuba" "seteh" "sievert" "syscall")
+  (libraries "kyuba" "seteh" "sievert")
 
   (code "scheduler"))
 
@@ -91,7 +91,7 @@
   (description "Kyuba Seteh Scripting Server")
   (version "1")
 
-  (libraries "seteh" "kyuba" "sievert" "syscall")
+  (libraries "seteh" "kyuba" "sievert")
 
   (code "server-seteh"))
 
@@ -100,7 +100,7 @@
   (description "Kyuba Configuration Server")
   (version "1")
 
-  (libraries "seteh" "kyuba" "sievert" "syscall")
+  (libraries "seteh" "kyuba" "sievert")
 
   (code "configuration"))
 
@@ -108,8 +108,6 @@
   (name "power")
   (description "Kyuba power control utility")
   (version "2")
-
-  (libraries "syscall")
 
   (code "power")
 
@@ -121,8 +119,6 @@
   (description "Kyuba last-rites programme")
   (version "2")
 
-  (libraries "syscall")
-
   (code "last-rites")
 
   (documentation
@@ -133,7 +129,7 @@
   (description "Kyuba Visualiser")
   (version "1")
 
-  (libraries "curie" "seteh" "kyuba" "sievert" "syscall")
+  (libraries "curie" "seteh" "kyuba" "sievert")
 
   (code "feedback"))
 
@@ -146,6 +142,6 @@
   (description "Kyuba Bootchart Programme")
   (version "1")
 
-  (libraries "curie" "seteh" "kyuba" "sievert" "syscall")
+  (libraries "curie" "seteh" "kyuba" "sievert")
 
   (code "bootchart"))
